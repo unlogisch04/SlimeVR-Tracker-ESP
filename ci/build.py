@@ -64,7 +64,6 @@ class DeviceConfiguration:
             imu_int = "23"
             imu_int2 = "25"
             battery_level = "36"
-            led_invert = False
         else:
             raise Exception(f"Unknown board: {self.board.value}")
 
