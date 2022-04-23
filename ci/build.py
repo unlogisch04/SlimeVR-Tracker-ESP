@@ -48,6 +48,8 @@ class DeviceConfiguration:
         imu_int = ""
         imu_int2 = ""
         battery_level = ""
+        led_pin = 2
+        led_invert = False
 
         if self.board == Board.SLIMEVR:
             sda = "4"
@@ -55,16 +57,14 @@ class DeviceConfiguration:
             imu_int = "10"
             imu_int2 = "13"
             battery_level = "17"
-            leds_pin = "2"
-            leds_invert = "true"
+            led_invert = True
         elif self.board == Board.WROOM32:
             sda = "21"
             scl = "22"
             imu_int = "23"
             imu_int2 = "25"
             battery_level = "36"
-            leds_pin = "2"
-            leds_invert = "false"
+            led_invert = False
         else:
             raise Exception(f"Unknown board: {self.board.value}")
 
@@ -83,8 +83,8 @@ class DeviceConfiguration:
 #define PIN_IMU_INT {imu_int}
 #define PIN_IMU_INT_2 {imu_int2}
 #define PIN_BATTERY_LEVEL {battery_level}
-#define LED_PIN {leds_pin}
-#define LED_INVERTED {leds_invert}
+#define LED_PIN {led_pin}
+#define LED_INVERTED {led_invert.__str__().lower()}
 """
 
     def __str__(self) -> str:
