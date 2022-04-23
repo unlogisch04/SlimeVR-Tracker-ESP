@@ -30,7 +30,7 @@ class DeviceConfiguration:
         platform = {self.platform}
         board = {self.platformio_board}""")
 
-        if self.platform == "espressif32":
+        if self.platform == "espressif32 @3.5.0":
             section += dedent("""
             lib_deps =
                 ${env.lib_deps}
