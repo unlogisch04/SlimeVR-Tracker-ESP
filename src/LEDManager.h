@@ -26,24 +26,27 @@
 #include <Arduino.h>
 #include "globals.h"
 #include "logging/Logger.h"
+#include "status/Status.h"
 
-#define DEFAULT_LENGTH 300
-#define DEFAULT_GAP 500
-#define DEFAULT_INTERVAL 3000
+/*
+#define DEFAULT_LENGTH 200
+#define DEFAULT_GAP 300
+#define DEFAULT_INTERVAL 2000
 
 #define STANDBUY_LENGTH DEFAULT_LENGTH
 #define IMU_ERROR_LENGTH DEFAULT_LENGTH
-#define IMU_ERROR_INTERVAL 1000
+#define IMU_ERROR_INTERVAL 2000
 #define IMU_ERROR_COUNT 5
 #define LOW_BATTERY_LENGTH DEFAULT_LENGTH
-#define LOW_BATTERY_INTERVAL 300
+#define LOW_BATTERY_INTERVAL 2000
 #define LOW_BATTERY_COUNT 1
 #define WIFI_CONNECTING_LENGTH DEFAULT_LENGTH
-#define WIFI_CONNECTING_INTERVAL 3000
+#define WIFI_CONNECTING_INTERVAL 2000
 #define WIFI_CONNECTING_COUNT 3
 #define SERVER_CONNECTING_LENGTH DEFAULT_LENGTH
-#define SERVER_CONNECTING_INTERVAL 3000
+#define SERVER_CONNECTING_INTERVAL 2000
 #define SERVER_CONNECTING_COUNT 2
+*/
 
 namespace SlimeVR
 {
@@ -53,6 +56,24 @@ namespace SlimeVR
         ON,
         GAP,
         INTERVAL
+    };
+
+    struct LEDConfig {
+        SlimeVR::Status::TrackerStatus Status;
+        uint16_t Length;
+        uint16_t GAP;
+        uint16_t Interval;
+        uint8_t Count;
+        LEDConfig() {}
+
+        LEDConfig(SlimeVR::Status::TrackerStatus Status_, uint16_t Length_, uint16_t GAP_, uint16_t Interval_, uint8_t Count_)
+        {
+            Status = Status_;
+            Length = Length_;
+            GAP = GAP_;
+            Interval = Interval_;
+            Count = Count_;
+        }
     };
 
     class LEDManager
@@ -89,10 +110,15 @@ namespace SlimeVR
         void update();
 
     private:
+        uint8_t m_LEDConfigsize = 6;
+        bool m_active = false; 
         uint8_t m_CurrentCount = 0;
+        uint8_t m_CurrentError = 0;
+        unsigned int length = 0;
         unsigned long m_Timer = 0;
         LEDStage m_CurrentStage = OFF;
         unsigned long m_LastUpdate = millis();
+        LEDConfig *pCurLEDConf;
 
         uint8_t m_Pin;
 

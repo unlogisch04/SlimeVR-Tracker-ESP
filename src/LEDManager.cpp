@@ -23,16 +23,29 @@
 
 #include "LEDManager.h"
 #include "GlobalVars.h"
-#include "status/Status.h"
+//#include "status/Status.h"
 
 namespace SlimeVR
 {
+    LEDConfig LEDBlinks[]{
+#if defined(LED_INTERVAL_STANDBY) && LED_INTERVAL_STANDBY > 0
+            LEDConfig(SlimeVR::Status::TrackerStatus::NONE,                100, 300, LED_INTERVAL_STANDBY, 1),
+#endif
+            LEDConfig(SlimeVR::Status::TrackerStatus::LOADING,             50, 50, 1000, 20),
+            LEDConfig(SlimeVR::Status::TrackerStatus::LOW_BATTERY,         100, 300, 2000, 1),
+            LEDConfig(SlimeVR::Status::TrackerStatus::IMU_ERROR ,          100, 300, 2000, 5),
+            LEDConfig(SlimeVR::Status::TrackerStatus::WIFI_CONNECTING ,    100, 300, 2000, 3),
+            LEDConfig(SlimeVR::Status::TrackerStatus::SERVER_CONNECTING ,  100, 300, 2000, 2)
+    };
+
     void LEDManager::setup()
     {
 #if ENABLE_LEDS
         pinMode(m_Pin, OUTPUT);
 #endif
-
+        this->m_LEDConfigsize = sizeof(LEDBlinks)/sizeof(LEDConfig);
+        this->m_CurrentError = 0;
+        this->pCurLEDConf = &LEDBlinks[m_CurrentError];
         // Do the initial pull of the state
         update();
     }
@@ -78,133 +91,95 @@ namespace SlimeVR
             return;
         }
 
-        m_LastUpdate = time;
+        this->m_LastUpdate = time;
 
-        unsigned int length = 0;
-        unsigned int count = 0;
-
-        if (statusManager.hasStatus(Status::LOW_BATTERY))
+        if (!statusManager.hasStatus(SlimeVR::Status::TrackerStatus::NONE))
         {
-            count = LOW_BATTERY_COUNT;
-            switch (m_CurrentStage)
+            // What do when there is a Error
+            if (!this->m_active)
             {
-            case ON:
-            case OFF:
-                length = LOW_BATTERY_LENGTH;
-                break;
-            case GAP:
-                length = DEFAULT_GAP;
-                break;
-            case INTERVAL:
-                length = LOW_BATTERY_INTERVAL;
-                break;
-            }
-        }
-        else if (statusManager.hasStatus(Status::IMU_ERROR))
-        {
-            count = IMU_ERROR_COUNT;
-            switch (m_CurrentStage)
-            {
-            case ON:
-            case OFF:
-                length = IMU_ERROR_LENGTH;
-                break;
-            case GAP:
-                length = DEFAULT_GAP;
-                break;
-            case INTERVAL:
-                length = IMU_ERROR_INTERVAL;
-                break;
-            }
-        }
-        else if (statusManager.hasStatus(Status::WIFI_CONNECTING))
-        {
-            count = WIFI_CONNECTING_COUNT;
-            switch (m_CurrentStage)
-            {
-            case ON:
-            case OFF:
-                length = WIFI_CONNECTING_LENGTH;
-                break;
-            case GAP:
-                length = DEFAULT_GAP;
-                break;
-            case INTERVAL:
-                length = WIFI_CONNECTING_INTERVAL;
-                break;
-            }
-        }
-        else if (statusManager.hasStatus(Status::SERVER_CONNECTING))
-        {
-            count = SERVER_CONNECTING_COUNT;
-            switch (m_CurrentStage)
-            {
-            case ON:
-            case OFF:
-                length = SERVER_CONNECTING_LENGTH;
-                break;
-            case GAP:
-                length = DEFAULT_GAP;
-                break;
-            case INTERVAL:
-                length = SERVER_CONNECTING_INTERVAL;
-                break;
-            }
+                for (uint8_t i = 0; i < this->m_LEDConfigsize; i++) 
+                {
+                    this->m_CurrentError++;
+                    if (this->m_CurrentError >= this->m_LEDConfigsize)
+                    {
+                        this->m_CurrentError = 0;
+                    }
+                    if (statusManager.hasStatus(LEDBlinks[m_CurrentError].Status)) 
+                    {
+                        this->pCurLEDConf = &LEDBlinks[m_CurrentError];
+                        this->m_active = true;
+                        this->m_CurrentStage = OFF;
+                    }
+                }
+            }    
         }
         else
         {
+            // What can we ignore when we have no Error / no Status to show?
 #if defined(LED_INTERVAL_STANDBY) && LED_INTERVAL_STANDBY > 0
-            count = 1;
-            switch (m_CurrentStage)
+            this->pCurLEDConf = &LEDBlinks[0];
+            if (!this->m_active) 
             {
-            case ON:
-            case OFF:
-                length = STANDBUY_LENGTH;
-                break;
-            case GAP:
-                length = DEFAULT_GAP;
-                break;
-            case INTERVAL:
-                length = LED_INTERVAL_STANDBY;
-                break;
+                this->m_active = true;
+                this->m_CurrentStage = OFF;
             }
-#else
-            return;
 #endif
         }
+        
+        if (this->m_active)
+        {
+            switch (this->m_CurrentStage)
+            {
+                case ON:
+//                  Serial.printf("LEDManager Stage ON\n");
+                    break;
+                case OFF:
+                    length = (pCurLEDConf)->Length;
+//                  Serial.printf("LEDManager Stage OFF\n");
+                    break;
+                case GAP:
+                    length = (pCurLEDConf)->GAP;
+//                  Serial.printf("LEDManager Stage GAP\n");
+                    break;
+                case INTERVAL:
+                    length = (pCurLEDConf)->Interval;
+//                  Serial.printf("LEDManager Stage INTERVAL\n");
+                break;
+            }
+        }       
 
-        if (m_CurrentStage == OFF || m_Timer + diff >= length)
+//        if (m_CurrentStage == OFF || m_Timer + diff >= length)
+        if ( m_Timer + diff >= length)
         {
             m_Timer = 0;
             // Advance stage
             switch (m_CurrentStage)
             {
-            case OFF:
-                on();
-                m_CurrentStage = ON;
-                m_CurrentCount = 0;
-                break;
-            case ON:
-                off();
-                m_CurrentCount++;
-                if (m_CurrentCount >= count)
-                {
+                case OFF:
+                    on();
+                    m_CurrentStage = ON;
                     m_CurrentCount = 0;
-                    m_CurrentStage = INTERVAL;
-                }
-                else
-                {
-                    m_CurrentStage = GAP;
-                }
-                break;
-            case GAP:
-            case INTERVAL:
-                on();
-                m_CurrentStage = ON;
-                break;
-                on();
-                m_CurrentStage = ON;
-                break;
+                    break;
+                case ON:
+                    off();
+                    m_CurrentCount++;
+                    if (this->m_CurrentCount >= (pCurLEDConf)->Count)
+                    {
+                        this->m_CurrentCount = 0;
+                        this->m_CurrentStage = INTERVAL;
+                    }
+                    else
+                    {
+                        this->m_CurrentStage = GAP;
+                    }
+                    break;
+                case GAP:
+                    this->m_CurrentStage = OFF;
+                    break;
+                case INTERVAL:
+                    this->m_active = false;
+                    break;
             }
         }
         else

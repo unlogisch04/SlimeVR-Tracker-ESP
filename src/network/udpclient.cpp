@@ -610,11 +610,12 @@ void ServerConnection::connect()
         lastConnectionAttemptMs = now;
         udpClientLogger.info("Looking for the server...");
         Network::sendHandshake();
-        ledManager.on();
+//        statusManager.setStatus(STATUS::)
+//        ledManager.on();
     }
     else if(lastConnectionAttemptMs + 20 < now)
     {
-        ledManager.off();
+//        ledManager.off();
     }
 }
 

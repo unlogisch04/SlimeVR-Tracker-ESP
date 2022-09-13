@@ -5,8 +5,9 @@ namespace SlimeVR
 {
     namespace Status
     {
-        enum Status
+        enum TrackerStatus
         {
+            NONE = 0,
             LOADING = 1 << 0,
             LOW_BATTERY = 1 << 1,
             IMU_ERROR = 1 << 2,
@@ -14,7 +15,7 @@ namespace SlimeVR
             SERVER_CONNECTING = 1 << 4
         };
 
-        const char *statusToString(Status status);
+        const char *statusToString(TrackerStatus status);
     }
 }
 

@@ -4,7 +4,7 @@ namespace SlimeVR
 {
     namespace Status
     {
-        const char *statusToString(Status status)
+        const char *statusToString(TrackerStatus status)
         {
             switch (status)
             {

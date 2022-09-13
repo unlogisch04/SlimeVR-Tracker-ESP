@@ -22,6 +22,7 @@
 */
 
 #include "SensorManager.h"
+#include "GlobalVars.h"
 #include <i2cscan.h>
 #include "network/network.h"
 #include "bno055sensor.h"
@@ -55,6 +56,7 @@ namespace SlimeVR
                 if (firstIMUAddress == 0)
                 {
                     m_Sensor1 = new ErroneousSensor(0, IMU);
+                    statusManager.setStatus(SlimeVR::Status::IMU_ERROR,true);
                 }
                 else
                 {

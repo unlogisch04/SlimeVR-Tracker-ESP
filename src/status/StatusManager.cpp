@@ -4,7 +4,7 @@ namespace SlimeVR
 {
     namespace Status
     {
-        void StatusManager::setStatus(Status status, bool value)
+        void StatusManager::setStatus(TrackerStatus status, bool value)
         {
             if (value)
             {
@@ -30,9 +30,18 @@ namespace SlimeVR
             }
         }
 
-        bool StatusManager::hasStatus(Status status)
+        bool StatusManager::hasStatus(TrackerStatus status)
         {
+            if (status == Status::NONE)
+            {
+                return m_Status == 0;
+            }
             return (m_Status & status) == status;
+        }
+
+        uint32_t StatusManager::getStatus()
+        {
+            return m_Status;
         }
     }
 }

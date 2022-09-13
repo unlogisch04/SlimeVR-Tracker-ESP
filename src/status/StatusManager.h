@@ -11,8 +11,10 @@ namespace SlimeVR
         class StatusManager
         {
         public:
-            void setStatus(Status status, bool value);
-            bool hasStatus(Status status);
+            void setStatus(TrackerStatus status, bool value);
+            bool hasStatus(TrackerStatus status);
+            bool noStatus();
+            uint32_t getStatus();
 
         private:
             uint32_t m_Status;
