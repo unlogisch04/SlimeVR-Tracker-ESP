@@ -129,7 +129,7 @@ namespace SlimeVR
                     pinMode(activeSDA, INPUT);
 
                     if (running) {
-                        i2c_set_pin(I2C_NUM_0, sdaPin, sclPin, false, false, I2C_MODE_MASTER);
+                        i2c_set_pin(I2C_NUM_0, sdaPin, sclPin, true, true, I2C_MODE_MASTER); // esp32-hal-i2c.c line 81,82
                     } else {
                         Wire.begin(static_cast<int>(sdaPin), static_cast<int>(sclPin), I2C_SPEED);
                         Wire.setTimeOut(150);
