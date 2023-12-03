@@ -79,7 +79,7 @@ void ICM20948Sensor::motionLoop()
         cntbuf = 0;
         cntrounds = 0;
     }
-*/  
+*/
 }
 
 void ICM20948Sensor::readFIFOToEnd()
@@ -144,7 +144,7 @@ void ICM20948Sensor::startCalibrationAutoSave()
 void ICM20948Sensor::startDMP()
 {
 #ifdef ESP32
-    #if ESP32C3
+    #if ESP32C3 || defined(ESP32C6)
         #define ICM20948_ODRGYR 1
         #define ICM20948_ODRAXL 1
     #else

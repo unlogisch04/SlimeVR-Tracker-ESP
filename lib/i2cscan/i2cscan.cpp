@@ -10,6 +10,10 @@ String portMap[] = {"D0", "D1", "D2", "D4", "D5", "D6", "D7"};
 uint8_t portArray[] = {2, 3, 4, 5, 6, 7, 8, 9, 10};
 uint8_t portExclude[] = {18, 19, 20, 21, LED_PIN};
 String portMap[] = {"2", "3", "4", "5", "6", "7", "8", "9", "10"};
+#elif defined(ESP32C6) //TODO: Assign the correct ports
+uint8_t portArray[] = {2, 3, 4, 5, 6, 7, 8, 9, 10};
+uint8_t portExclude[] = {12, 13, 18, 19, 20, 21, LED_PIN};
+String portMap[] = {"2", "3", "4", "5", "6", "7", "8", "9", "10"};
 #elif defined(ESP32)
 uint8_t portArray[] = {4, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33};
 String portMap[] = {"4", "13", "14", "15", "16", "17", "18", "19", "21", "22", "23", "25", "26", "27", "32", "33"};
@@ -65,7 +69,7 @@ namespace I2CSCAN
     {
         for (size_t i = 0; i < arraySize; i++)
         {
-            if (value == array[i]) 
+            if (value == array[i])
             {
                 return true;
             }
@@ -73,7 +77,7 @@ namespace I2CSCAN
 
         return false;
     }
-    
+
     bool checkI2C(uint8_t i, uint8_t j)
     {
         bool found = false;
@@ -97,7 +101,7 @@ namespace I2CSCAN
 
             if (error == 0)
             {
-                Serial.printf("[DBG] I2C (@ %s(%d) : %s(%d)): I2C device found at address 0x%02x  !\n", 
+                Serial.printf("[DBG] I2C (@ %s(%d) : %s(%d)): I2C device found at address 0x%02x  !\n",
                                 portMap[i].c_str(), portArray[i], portMap[j].c_str(), portArray[j], address);
                 nDevices++;
                 found = true;
@@ -113,13 +117,13 @@ namespace I2CSCAN
 
     bool hasDevOnBus(uint8_t addr) {
         byte error;
-#if ESP32C3
+#if ESP32C3 || defined(ESP32C6)
         int retries = 2;
         do {
 #endif
             Wire.beginTransmission(addr);
             error = Wire.endTransmission();
-#if ESP32C3
+#if ESP32C3 || defined(ESP32C6)
         }
         while (error != 0 && retries--);
 #endif
@@ -152,7 +156,7 @@ namespace I2CSCAN
         pinMode(SCL, INPUT_PULLUP);
 
         boolean SCL_LOW = (digitalRead(SCL) == LOW); // Check is SCL is Low.
-        if (SCL_LOW) { //If it is held low Arduno cannot become the I2C master. 
+        if (SCL_LOW) { //If it is held low Arduno cannot become the I2C master.
             return 1; //I2C bus error. Could not clear SCL clock line held low
         }
 

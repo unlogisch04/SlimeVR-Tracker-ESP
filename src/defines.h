@@ -28,7 +28,7 @@
 // Set parameters of IMU and board used
 #define IMU IMU_BNO085
 #define SECOND_IMU IMU
-#define BOARD BOARD_SLIMEVR
+#define BOARD BOARD_ES32C6DEVKITM1
 #define IMU_ROTATION DEG_270
 #define SECOND_IMU_ROTATION DEG_270
 
@@ -53,8 +53,8 @@ IMU_DESC_ENTRY(IMU_BMP160, PRIMARY_IMU_ADDRESS_ONE, IMU_ROTATION, PIN_IMU_SCL, P
 #endif
 
 // Battery monitoring options (comment to disable):
-//   BAT_EXTERNAL for ADC pin, 
-//   BAT_INTERNAL for internal - can detect only low battery, 
+//   BAT_EXTERNAL for ADC pin,
+//   BAT_INTERNAL for internal - can detect only low battery,
 //   BAT_MCP3021 for external ADC connected over I2C
 #define BATTERY_MONITOR BAT_EXTERNAL
 
@@ -75,7 +75,7 @@ IMU_DESC_ENTRY(IMU_BMP160, PRIMARY_IMU_ADDRESS_ONE, IMU_ROTATION, PIN_IMU_SCL, P
 //   LED_PIN
 //     - Number or Symbol (D1,..) of the Output
 //     - To turn off the LED, set LED_PIN to LED_OFF
-//   LED_INVERTED 
+//   LED_INVERTED
 //     - false for output 3.3V on high
 //     - true for pull down to GND on high
 
@@ -91,7 +91,7 @@ IMU_DESC_ENTRY(IMU_BMP160, PRIMARY_IMU_ADDRESS_ONE, IMU_ROTATION, PIN_IMU_SCL, P
   #ifndef BATTERY_SHIELD_RESISTANCE
     #define BATTERY_SHIELD_RESISTANCE 0
   #endif
-  #ifndef BATTERY_SHIELD_R1 
+  #ifndef BATTERY_SHIELD_R1
     #define BATTERY_SHIELD_R1 10
   #endif
   #ifndef BATTERY_SHIELD_R2
@@ -108,7 +108,7 @@ IMU_DESC_ENTRY(IMU_BMP160, PRIMARY_IMU_ADDRESS_ONE, IMU_ROTATION, PIN_IMU_SCL, P
   #ifndef BATTERY_SHIELD_RESISTANCE
     #define BATTERY_SHIELD_RESISTANCE 0
   #endif
-  #ifndef BATTERY_SHIELD_R1 
+  #ifndef BATTERY_SHIELD_R1
     #define BATTERY_SHIELD_R1 10
   #endif
   #ifndef BATTERY_SHIELD_R2
@@ -125,7 +125,7 @@ IMU_DESC_ENTRY(IMU_BMP160, PRIMARY_IMU_ADDRESS_ONE, IMU_ROTATION, PIN_IMU_SCL, P
   #ifndef BATTERY_SHIELD_RESISTANCE
     #define BATTERY_SHIELD_RESISTANCE 180
   #endif
-  #ifndef BATTERY_SHIELD_R1 
+  #ifndef BATTERY_SHIELD_R1
     #define BATTERY_SHIELD_R1 100
   #endif
   #ifndef BATTERY_SHIELD_R2
@@ -189,4 +189,12 @@ IMU_DESC_ENTRY(IMU_BMP160, PRIMARY_IMU_ADDRESS_ONE, IMU_ROTATION, PIN_IMU_SCL, P
   #define PIN_BATTERY_LEVEL A0
   #define LED_PIN 16
   #define LED_INVERTED true
+#elif BOARD == BOARD_ES32C6DEVKITM1
+  #define PIN_IMU_SDA 6
+  #define PIN_IMU_SCL 7
+  #define PIN_IMU_INT 0
+  #define PIN_IMU_INT_2 1
+  #define PIN_BATTERY_LEVEL 2
+  #define LED_PIN LED_BUILTIN  // RGB LED Protocol would need to be implementetet did not brother for the test, because the board ideal for tracker ifself
+  #define LED_INVERTED false
 #endif
