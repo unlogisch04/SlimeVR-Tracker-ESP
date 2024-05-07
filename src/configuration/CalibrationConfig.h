@@ -74,7 +74,6 @@ namespace SlimeVR {
             uint8_t MotionlessData[60];
         };
 
-
         struct BMI323CalibrationConfig {
             // accelerometer offsets and gain
             uint16_t G_O[3];
