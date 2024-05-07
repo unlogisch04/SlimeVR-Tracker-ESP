@@ -25,6 +25,7 @@
 #define SLIMEVR_CONFIGURATION_CALIBRATIONCONFIG_H
 
 #include <stdint.h>
+#include "consts.h"
 
 namespace SlimeVR {
     namespace Configuration {
@@ -43,6 +44,36 @@ namespace SlimeVR {
             // calibration temperature for dynamic compensation
             float temperature;
         };
+
+        struct SoftFusionCalibrationConfig {
+            ImuID ImuType;
+            uint16_t MotionlessDataLen;
+
+            // accelerometer offsets and correction matrix
+            float A_B[3];
+            float A_Ainv[3][3];
+
+            // magnetometer offsets and correction matrix
+            float M_B[3];
+            float M_Ainv[3][3];
+
+            // raw offsets, determined from gyro at rest
+            float G_off[3];
+
+            // calibration temperature for dynamic compensation
+            float temperature;
+
+            // real measured sensor sampling rate
+            float A_Ts;
+            float G_Ts;
+            float M_Ts;
+
+            // gyro sensitivity multiplier
+            float G_Sens[3];
+
+            uint8_t MotionlessData[60];
+        };
+
 
         struct BMI323CalibrationConfig {
             // accelerometer offsets and gain
@@ -105,7 +136,7 @@ namespace SlimeVR {
             float G_off[3];
         };
 
-        enum CalibrationConfigType { NONE, BMI160, MPU6050, MPU9250, ICM20948, ICM42688, BMI323 };
+        enum CalibrationConfigType { NONE, BMI160, MPU6050, MPU9250, ICM20948, SFUSION, BMI323 };
 
         const char* calibrationConfigTypeToString(CalibrationConfigType type);
 
@@ -114,11 +145,11 @@ namespace SlimeVR {
 
             union {
                 BMI160CalibrationConfig bmi160;
+                SoftFusionCalibrationConfig sfusion;
                 BMI323CalibrationConfig bmi323;
                 MPU6050CalibrationConfig mpu6050;
                 MPU9250CalibrationConfig mpu9250;
                 ICM20948CalibrationConfig icm20948;
-                ICM42688CalibrationConfig icm42688;
             } data;
         };
     }
