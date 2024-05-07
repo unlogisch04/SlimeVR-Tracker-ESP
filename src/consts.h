@@ -37,11 +37,13 @@ enum class ImuID {
     BMI160,
     ICM20948,
     ICM42688,
-    BMI270,
+    NV_BMI270_BMI323,
     LSM6DS3TRC,
     LSM6DSV,
     LSM6DSO,
     LSM6DSR,
+    BMI270,
+    BMI323,
     Empty = 255
 };
 
@@ -62,6 +64,7 @@ enum class ImuID {
 #define IMU_LSM6DSO SoftFusionLSM6DSO
 #define IMU_LSM6DSR SoftFusionLSM6DSR
 #define IMU_MPU6050_SF SoftFusionMPU6050
+#define IMU_BMI323 BMI323Sensor
 
 #define IMU_DEV_RESERVED 250 // Reserved, should not be used in any release firmware
 

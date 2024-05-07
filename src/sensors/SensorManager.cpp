@@ -28,6 +28,7 @@
 #include "mpu9250sensor.h"
 #include "mpu6050sensor.h"
 #include "bmi160sensor.h"
+#include "bmi323sensor.h"
 #include "icm20948sensor.h"
 #include "sensoraddresses.h"
 #include "softfusion/softfusionsensor.h"
@@ -172,7 +173,7 @@ namespace SlimeVR
 
                 m_LastBundleSentAtMicros = now;
             #endif
-            
+
             #if PACKET_BUNDLING != PACKET_BUNDLING_DISABLED
                 networkConnection.beginBundle();
             #endif
