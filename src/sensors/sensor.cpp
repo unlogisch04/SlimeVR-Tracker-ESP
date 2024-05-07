@@ -103,6 +103,7 @@ const char * getIMUNameByType(ImuID imuType) {
             return "LSM6DSO";
         case ImuID::LSM6DSR:
             return "LSM6DSR";
+        case ImuID::NV_BMI270_BMI323:
         case ImuID::Unknown:
         case ImuID::Empty:
             return "UNKNOWN";
