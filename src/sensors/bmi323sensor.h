@@ -35,15 +35,18 @@
 
 class BMI323Sensor : public Sensor {
 public:
+	static constexpr uint8_t Address = 0x68;
+	static constexpr auto TypeID = ImuID::BMI323;
+
 	BMI323Sensor(
 		uint8_t id,
-		uint8_t address,
+		uint8_t addrSuppl,
 		float rotation,
 		uint8_t sclPin,
 		uint8_t sdaPin
 	)
-		: Sensor("BMI323Sensor", IMU_BMI323, id, address, rotation, sclPin, sdaPin)
-		, address(address)
+		: Sensor("BMI323Sensor", ImuID::BMI323, id, Address+addrSuppl, rotation, sclPin, sdaPin)
+		, address(Address+addrSuppl)
 		, m_sfusion(0.0025, 0.005, 0.04)
 		,  // Gyro, Accel, Mag // in seconds (1 / frequency)
 		bmi323(i2cRead, i2cWrite, delayUs, &this->address)
