@@ -43,7 +43,8 @@ public:
 		uint8_t addrSuppl,
 		float rotation,
 		uint8_t sclPin,
-		uint8_t sdaPin
+		uint8_t sdaPin,
+		uint8_t
 	)
 		: Sensor("BMI323Sensor", ImuID::BMI323, id, Address+addrSuppl, rotation, sclPin, sdaPin)
 		, address(Address+addrSuppl)
