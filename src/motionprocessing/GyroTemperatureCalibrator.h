@@ -28,7 +28,7 @@
 #include <stdint.h>
 #include "debug.h"
 #include "../logging/Logger.h"
-#include "../configuration/CalibrationConfig.h"
+#include "../configuration/SensorConfig.h"
 #include "OnlinePolyfit.h"
 
 
@@ -111,7 +111,7 @@ struct GyroTemperatureOffsetSample {
 };
 
 struct GyroTemperatureCalibrationConfig {
-    SlimeVR::Configuration::CalibrationConfigType type;
+    SlimeVR::Configuration::SensorConfigType type;
 
     float sensitivityLSB;
     float minTemperatureRange;
@@ -125,7 +125,7 @@ struct GyroTemperatureCalibrationConfig {
     float cz[4] = {0.0};
     bool hasCoeffs = false;
 
-    GyroTemperatureCalibrationConfig(SlimeVR::Configuration::CalibrationConfigType _type, float _sensitivityLSB) :
+    GyroTemperatureCalibrationConfig(SlimeVR::Configuration::SensorConfigType _type, float _sensitivityLSB) :
         type(_type),
         sensitivityLSB(_sensitivityLSB),
         minTemperatureRange(1000),
@@ -180,7 +180,7 @@ public:
     bool configSaved = false;
     bool configSaveFailed = false;
 
-    GyroTemperatureCalibrator(SlimeVR::Configuration::CalibrationConfigType _configType, uint8_t _sensorId, float sensitivity, uint32_t _samplesPerStep):
+    GyroTemperatureCalibrator(SlimeVR::Configuration::SensorConfigType _configType, uint8_t _sensorId, float sensitivity, uint32_t _samplesPerStep):
         sensorId(_sensorId),
         config(_configType, sensitivity),
         samplesPerStep(_samplesPerStep),

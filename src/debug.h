@@ -33,10 +33,6 @@
 	#define BNO_USE_ARVR_STABILIZATION true // Set to false to disable stabilization for BNO085+ IMUs
 #endif
 
-#ifndef BNO_USE_MAGNETOMETER_CORRECTION
-	#define BNO_USE_MAGNETOMETER_CORRECTION false // Set to true to enable magnetometer correction for BNO08x IMUs. Only works with USE_6_AXIS set to true.
-#endif
-
 #ifndef USE_6_AXIS
 	#define USE_6_AXIS true // uses 9 DoF (with mag) if false (only for ICM-20948 and BNO0xx currently)
 #endif
@@ -154,7 +150,7 @@
 	#define ENABLE_INSPECTION false
 #endif
 
-#define PROTOCOL_VERSION 17
-#define FIRMWARE_VERSION "0.4.0"
+#define PROTOCOL_VERSION 18
+#define FIRMWARE_VERSION "0.5.0"
 
 #endif // SLIMEVR_DEBUG_H_
