@@ -154,7 +154,7 @@
 	#define ENABLE_INSPECTION false
 #endif
 
-#define FIRMWARE_BUILD_NUMBER 17
+#define PROTOCOL_VERSION 17
 #define FIRMWARE_VERSION "0.4.0"
 
 #endif // SLIMEVR_DEBUG_H_
