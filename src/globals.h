@@ -24,11 +24,7 @@
 #define SLIMEVR_GLOBALS_H_
 
 #include <Arduino.h>
-#include "consts.h"
 #include "debug.h"
-#include "defines.h"
-#include "defines_bmi160.h"
-#include "defines_sensitivity.h"
 
 #ifndef SECOND_IMU
 #define SECOND_IMU IMU
@@ -47,7 +43,7 @@
 #if defined(LED_PIN)
     // LED_PIN is defined
     #if (LED_PIN < 0) || (LED_PIN >= LED_OFF)
-        #define ENABLE_LEDS false    
+        #define ENABLE_LEDS false
     #else
         #define ENABLE_LEDS true
     #endif
