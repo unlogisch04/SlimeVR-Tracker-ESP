@@ -1,46 +1,19 @@
-// SPDX-FileCopyrightText: 2021 Daniel Laidig <laidig@control.tu-berlin.de>
-//
-// SPDX-License-Identifier: MIT
+#ifndef VQF_H
+#define VQF_H
 
-// Modified to add timestamps in: updateGyr(const vqf_real_t gyr[3], vqf_real_t gyrTs)
-// Removed batch update functions
-
-#ifndef VQF_HPP
-#define VQF_HPP
-
-#include <stddef.h>
+#include <cmath>
+#include <algorithm>
 
 #define VQF_SINGLE_PRECISION
-#define M_PI 3.14159265358979323846
-#define M_SQRT2 1.41421356237309504880
+#define VQF_NO_MOTION_BIAS_ESTIMATION
+#define VQF_VR_MODE
 
-/**
- * @brief Typedef for the floating-point data type used for most operations.
- *
- * By default, all floating-point calculations are performed using `vqf_real_t`. Set the
- * `VQF_SINGLE_PRECISION` define to change this type to `float`. Note that the
- * Butterworth filter implementation will always use vqf_real_t precision as using floats
- * can cause numeric issues.
- */
-#ifndef VQF_SINGLE_PRECISION
-typedef double vqf_real_t;
-#else
+constexpr float VQF_PI = 3.14159265358979323846f;
+constexpr float VQF_SQRT2 = 1.41421356237309504880f;
+constexpr float VQF_EPS = 1.1920929e-07f;
+
 typedef float vqf_real_t;
-#endif
 
-/**
- * @brief Struct containing all tuning parameters used by the VQF class.
- *
- * The parameters influence the behavior of the algorithm and are independent of the
- * sampling rate of the IMU data. The constructor sets all parameters to the default
- * values.
- *
- * The parameters #motionBiasEstEnabled, #restBiasEstEnabled, and
- * #magDistRejectionEnabled can be used to enable/disable the main features of the VQF
- * algorithm. The time constants #tauAcc and #tauMag can be tuned to change the trust on
- * the accelerometer and magnetometer measurements, respectively. The remaining
- * parameters influence bias estimation and magnetometer rejection.
- */
 struct VQFParams {
 	/**
 	 * @brief Time constant \f$\tau_\mathrm{acc}\f$ for accelerometer low-pass filtering
@@ -304,844 +277,155 @@ struct VQFParams {
 	 * Default value: 2.0
 	 */
 	vqf_real_t magRejectionFactor = 2.0;
+
+    // VR parameters
+    vqf_real_t maxAngularRate;
+    vqf_real_t vrStabilityThreshold;
+
+    // Filter parameters
+    vqf_real_t accLpB[3]{0.0f, 0.0f, 0.0f};  // Accelerometer low-pass filter coefficients
+    vqf_real_t magLpB[3]{0.0f, 0.0f, 0.0f};  // Magnetometer low-pass filter coefficients
 };
 
-/**
- * @brief Struct containing the filter state of the VQF class.
- *
- * The relevant parts of the state can be accessed via functions of the VQF class, e.g.
- * VQF::getQuat6D(), VQF::getQuat9D(), VQF::getGyrBiasEstimate(),
- * VQF::setGyrBiasEstimate(), VQF::getRestDetected() and VQF::getMagDistDetected(). To
- * reset the state to the initial values, use VQF::resetState().
- *
- * Direct access to the full state is typically not needed but can be useful in some
- * cases, e.g. for debugging. For this purpose, the state can be accessed by
- * VQF::getState() and set by VQF::setState().
- */
+//struct VQFParams {
+//    VQFParams();
+//
+//    // Core parameters
+//    vqf_real_t tauAcc;
+//    vqf_real_t tauMag;
+//    bool restBiasEstEnabled;
+//    bool magDistRejectionEnabled;
+//    vqf_real_t biasSigmaInit;
+//    vqf_real_t biasForgettingTime;
+//    vqf_real_t biasClip;
+//    vqf_real_t biasSigmaRest;
+//    vqf_real_t restMinT;
+//    vqf_real_t restFilterTau;
+//    vqf_real_t restThGyr;
+//    vqf_real_t restThAcc;
+//    vqf_real_t magCurrentTau;
+//    vqf_real_t magRefTau;
+//    vqf_real_t magNormTh;
+//    vqf_real_t magDipTh;
+//    vqf_real_t magNewTime;
+//    vqf_real_t magNewFirstTime;
+//    vqf_real_t magNewMinGyr;
+//    vqf_real_t magMinUndisturbedTime;
+//    vqf_real_t magMaxRejectionTime;
+//    vqf_real_t magRejectionFactor;
+//
+//    // VR parameters
+//    vqf_real_t maxAngularRate;
+//    vqf_real_t vrStabilityThreshold;
+//
+//    // Filter parameters
+//    vqf_real_t accLpB[3]{0.0f, 0.0f, 0.0f};  // Accelerometer low-pass filter coefficients
+//    vqf_real_t magLpB[3]{0.0f, 0.0f, 0.0f};  // Magnetometer low-pass filter coefficients
+//};
+
 struct VQFState {
-	/**
-	 * @brief Angular velocity strapdown integration quaternion
-	 * \f$^{\mathcal{S}_i}_{\mathcal{I}_i}\mathbf{q}\f$.
-	 */
-	vqf_real_t gyrQuat[4];
-	/**
-	 * @brief Inclination correction quaternion
-	 * \f$^{\mathcal{I}_i}_{\mathcal{E}_i}\mathbf{q}\f$.
-	 */
-	vqf_real_t accQuat[4];
-	/**
-	 * @brief Heading difference \f$\delta\f$ between \f$\mathcal{E}_i\f$ and
-	 * \f$\mathcal{E}\f$.
-	 *
-	 * \f$^{\mathcal{E}_i}_{\mathcal{E}}\mathbf{q} = \begin{bmatrix}\cos\frac{\delta}{2}
-	 * & 0 & 0 & \sin\frac{\delta}{2}\end{bmatrix}^T\f$.
-	 */
-	vqf_real_t delta;
-	/**
-	 * @brief True if it has been detected that the IMU is currently at rest.
-	 *
-	 * Used to switch between rest and motion gyroscope bias estimation.
-	 */
-	bool restDetected;
-	/**
-	 * @brief True if magnetic disturbances have been detected.
-	 */
-	bool magDistDetected;
+    // Orientation state
+    vqf_real_t gyrQuat[4];
+    vqf_real_t accQuat[4];
+    vqf_real_t delta;
 
-	/**
-	 * @brief Last low-pass filtered acceleration in the \f$\mathcal{I}_i\f$ frame.
-	 */
-	vqf_real_t lastAccLp[3];
-	/**
-	 * @brief Internal low-pass filter state for #lastAccLp.
-	 */
-	vqf_real_t accLpState[3 * 2];
-	/**
-	 * @brief Last inclination correction angular rate.
-	 *
-	 * Change to inclination correction quaternion
-	 * \f$^{\mathcal{I}_i}_{\mathcal{E}_i}\mathbf{q}\f$ performed in the last
-	 * accelerometer update, expressed as an angular rate (in rad/s).
-	 */
-	vqf_real_t lastAccCorrAngularRate;
+    // System state
+    bool restDetected;
+    bool magDistDetected;
+    bool poseStable;
+    vqf_real_t motionEnergy;
 
-	/**
-	 * @brief Gain used for heading correction to ensure fast initial convergence.
-	 *
-	 * This value is used as the gain for heading correction in the beginning if it is
-	 * larger than the normal filter gain. It is initialized to 1 and then updated to
-	 * 0.5, 0.33, 0.25, ... After VQFParams::tauMag seconds, it is set to zero.
-	 */
-	vqf_real_t kMagInit;
-	/**
-	 * @brief Last heading disagreement angle.
-	 *
-	 * Disagreement between the heading \f$\hat\delta\f$ estimated from the last
-	 * magnetometer sample and the state \f$\delta\f$ (in rad).
-	 */
-	vqf_real_t lastMagDisAngle;
-	/**
-	 * @brief Last heading correction angular rate.
-	 *
-	 * Change to heading \f$\delta\f$ performed in the last magnetometer update,
-	 * expressed as an angular rate (in rad/s).
-	 */
-	vqf_real_t lastMagCorrAngularRate;
+    // Filter states
+    vqf_real_t lastAccLp[3];
+    vqf_real_t accLpState[3*2];
+    vqf_real_t lastAccCorrAngularRate;
+    vqf_real_t kMagInit;
+    vqf_real_t lastMagDisAngle;
+    vqf_real_t lastMagCorrAngularRate;
+    vqf_real_t bias[3];
+    vqf_real_t biasP;
 
-	/**
-	 * @brief Current gyroscope bias estimate (in rad/s).
-	 */
-	vqf_real_t bias[3];
-#ifndef VQF_NO_MOTION_BIAS_ESTIMATION
-	/**
-	 * @brief Covariance matrix of the gyroscope bias estimate.
-	 *
-	 * The 3x3 matrix is stored in row-major order. Note that for numeric reasons the
-	 * internal unit used is 0.01 °/s, i.e. to get the standard deviation in degrees per
-	 * second use \f$\sigma = \frac{\sqrt{p_{ii}}}{100}\f$.
-	 */
-	vqf_real_t biasP[9];
-#else
-	// If only rest gyr bias estimation is enabled, P and K of the KF are always
-	// diagonal and matrix inversion is not needed. If motion bias estimation is
-	// disabled at compile time, storing the full P matrix is not necessary.
-	vqf_real_t biasP;
-#endif
+    // Rest detection
+    vqf_real_t restLastSquaredDeviations[2];
+    vqf_real_t restT;
+    vqf_real_t restLastGyrLp[3];
+    vqf_real_t restGyrLpState[3*2];
+    vqf_real_t restLastAccLp[3];
+    vqf_real_t restAccLpState[3*2];
 
-#ifndef VQF_NO_MOTION_BIAS_ESTIMATION
-	/**
-	 * @brief Internal state of the Butterworth low-pass filter for the rotation matrix
-	 * coefficients used in motion bias estimation.
-	 */
-	vqf_real_t motionBiasEstRLpState[9 * 2];
-	/**
-	 * @brief Internal low-pass filter state for the rotated bias estimate used in
-	 * motion bias estimation.
-	 */
-	vqf_real_t motionBiasEstBiasLpState[2 * 2];
-#endif
-	/**
-	 * @brief Last (squared) deviations from the reference of the last sample used in
-	 * rest detection.
-	 *
-	 * Looking at those values can be useful to understand how rest detection is working
-	 * and which thresholds are suitable. The array contains the last values for
-	 * gyroscope and accelerometer in the respective units. Note that the values are
-	 * squared.
-	 *
-	 * The method VQF::getRelativeRestDeviations() provides an easier way to obtain and
-	 * interpret those values.
-	 */
-	vqf_real_t restLastSquaredDeviations[2];
-	/**
-	 * @brief The current duration for which all sensor readings are within the rest
-	 * detection thresholds.
-	 *
-	 * Rest is detected if this value is larger or equal to VQFParams::restMinT.
-	 */
-	vqf_real_t restT;
-	/**
-	 * @brief Last low-pass filtered gyroscope measurement used as the reference for
-	 * rest detection.
-	 *
-	 * Note that this value is also used for gyroscope bias estimation when rest is
-	 * detected.
-	 */
-	vqf_real_t restLastGyrLp[3];
-	/**
-	 * @brief Internal low-pass filter state for #restLastGyrLp.
-	 */
-	vqf_real_t restGyrLpState[3 * 2];
-	/**
-	 * @brief Last low-pass filtered accelerometer measurement used as the reference for
-	 * rest detection.
-	 */
-	vqf_real_t restLastAccLp[3];
-	/**
-	 * @brief Internal low-pass filter state for #restLastAccLp.
-	 */
-	vqf_real_t restAccLpState[3 * 2];
+    // Magnetometer state
+    vqf_real_t magRefNorm;
+    vqf_real_t magRefDip;
+    vqf_real_t magUndisturbedT;
+    vqf_real_t magRejectT;
+    vqf_real_t magCandidateNorm;
+    vqf_real_t magCandidateDip;
+    vqf_real_t magCandidateT;
+    vqf_real_t magNormDip[2];
+    vqf_real_t magNormDipLpState[2*2];
 
-	/**
-	 * @brief Norm of the currently accepted magnetic field reference.
-	 *
-	 * A value of -1 indicates that no homogeneous field is found yet.
-	 */
-	vqf_real_t magRefNorm;
-	/**
-	 * @brief Dip angle of the currently accepted magnetic field reference.
-	 */
-	vqf_real_t magRefDip;
-	/**
-	 * @brief The current duration for which the current norm and dip are close to the
-	 * reference.
-	 *
-	 * The magnetic field is regarded as undisturbed when this value reaches
-	 * VQFParams::magMinUndisturbedTime.
-	 */
-	vqf_real_t magUndisturbedT;
-	/**
-	 * @brief The current duration for which the magnetic field was rejected.
-	 *
-	 * If the magnetic field is disturbed and this value is smaller than
-	 * VQFParams::magMaxRejectionTime, heading correction updates are fully disabled.
-	 */
-	vqf_real_t magRejectT;
-	/**
-	 * @brief Norm of the alternative magnetic field reference currently being
-	 * evaluated.
-	 */
-	vqf_real_t magCandidateNorm;
-	/**
-	 * @brief Dip angle of the alternative magnetic field reference currently being
-	 * evaluated.
-	 */
-	vqf_real_t magCandidateDip;
-	/**
-	 * @brief The current duration for which the norm and dip are close to the
-	 * candidate.
-	 *
-	 * If this value exceeds VQFParams::magNewTime (or VQFParams::magNewFirstTime if
-	 * #magRefNorm < 0), the current candidate is accepted as the new reference.
-	 */
-	vqf_real_t magCandidateT;
-	/**
-	 * @brief Norm and dip angle of the current magnetometer measurements.
-	 *
-	 * Slightly low-pass filtered, see VQFParams::magCurrentTau.
-	 */
-	vqf_real_t magNormDip[2];
-	/**
-	 * @brief Internal low-pass filter state for the current norm and dip angle.
-	 */
-	vqf_real_t magNormDipLpState[2 * 2];
+    // VR tracking
+    vqf_real_t vrCalibrationTimer;
 };
-
-/**
- * @brief Struct containing coefficients used by the VQF class.
- *
- * Coefficients are values that depend on the parameters and the sampling times, but do
- * not change during update steps. They are calculated in VQF::setup().
- */
-struct VQFCoefficients {
-	/**
-	 * @brief Sampling time of the gyroscope measurements (in seconds).
-	 */
-	vqf_real_t gyrTs;
-	/**
-	 * @brief Sampling time of the accelerometer measurements (in seconds).
-	 */
-	vqf_real_t accTs;
-	/**
-	 * @brief Sampling time of the magnetometer measurements (in seconds).
-	 */
-	vqf_real_t magTs;
-
-	/**
-	 * @brief Numerator coefficients of the acceleration low-pass filter.
-	 *
-	 * The array contains \f$\begin{bmatrix}b_0 & b_1 & b_2\end{bmatrix}\f$.
-	 */
-	vqf_real_t accLpB[3];
-	/**
-	 * @brief Denominator coefficients of the acceleration low-pass filter.
-	 *
-	 * The array contains \f$\begin{bmatrix}a_1 & a_2\end{bmatrix}\f$ and \f$a_0=1\f$.
-	 */
-	vqf_real_t accLpA[2];
-
-	/**
-	 * @brief Gain of the first-order filter used for heading correction.
-	 */
-	vqf_real_t kMag;
-
-	/**
-	 * @brief Variance of the initial gyroscope bias estimate.
-	 */
-	vqf_real_t biasP0;
-	/**
-	 * @brief System noise variance used in gyroscope bias estimation.
-	 */
-	vqf_real_t biasV;
-#ifndef VQF_NO_MOTION_BIAS_ESTIMATION
-	/**
-	 * @brief Measurement noise variance for the motion gyroscope bias estimation
-	 * update.
-	 */
-	vqf_real_t biasMotionW;
-	/**
-	 * @brief Measurement noise variance for the motion gyroscope bias estimation update
-	 * in vertical direction.
-	 */
-	vqf_real_t biasVerticalW;
-#endif
-	/**
-	 * @brief Measurement noise variance for the rest gyroscope bias estimation update.
-	 */
-	vqf_real_t biasRestW;
-
-	/**
-	 * @brief Numerator coefficients of the gyroscope measurement low-pass filter for
-	 * rest detection.
-	 */
-	vqf_real_t restGyrLpB[3];
-	/**
-	 * @brief Denominator coefficients of the gyroscope measurement low-pass filter for
-	 * rest detection.
-	 */
-	vqf_real_t restGyrLpA[2];
-	/**
-	 * @brief Numerator coefficients of the accelerometer measurement low-pass filter
-	 * for rest detection.
-	 */
-	vqf_real_t restAccLpB[3];
-	/**
-	 * @brief Denominator coefficients of the accelerometer measurement low-pass filter
-	 * for rest detection.
-	 */
-	vqf_real_t restAccLpA[2];
-
-	/**
-	 * @brief Gain of the first-order filter used for to update the magnetic field
-	 * reference and candidate.
-	 */
-	vqf_real_t kMagRef;
-	/**
-	 * @brief Numerator coefficients of the low-pass filter for the current magnetic
-	 * norm and dip.
-	 */
-	vqf_real_t magNormDipLpB[3];
-	/**
-	 * @brief Denominator coefficients of the low-pass filter for the current magnetic
-	 * norm and dip.
-	 */
-	vqf_real_t magNormDipLpA[2];
-};
-
-/**
- * @brief A Versatile Quaternion-based Filter for IMU Orientation Estimation.
- *
- * \rst
- * This class implements the orientation estimation filter described in the following
- * publication:
- *
- *
- *     D. Laidig and T. Seel. "VQF: Highly Accurate IMU Orientation Estimation with Bias
- * Estimation and Magnetic Disturbance Rejection." Information Fusion 2023, 91,
- * 187--204. `doi:10.1016/j.inffus.2022.10.014
- * <https://doi.org/10.1016/j.inffus.2022.10.014>`_. [Accepted manuscript available at
- * `arXiv:2203.17024 <https://arxiv.org/abs/2203.17024>`_.]
- *
- * The filter can perform simultaneous 6D (magnetometer-free) and 9D (gyr+acc+mag)
- * sensor fusion and can also be used without magnetometer data. It performs rest
- * detection, gyroscope bias estimation during rest and motion, and magnetic disturbance
- * detection and rejection. Different sampling rates for gyroscopes, accelerometers, and
- * magnetometers are supported as well. While in most cases, the defaults will be
- * reasonable, the algorithm can be influenced via a number of tuning parameters.
- *
- * To use this C++ implementation,
- *
- * 1. create a instance of the class and provide the sampling time and, optionally,
- * parameters
- * 2. for every sample, call one of the update functions to feed the algorithm with IMU
- * data
- * 3. access the estimation results with :meth:`getQuat6D() <VQF.getQuat6D>`,
- * :meth:`getQuat9D() <VQF.getQuat9D>` and the other getter methods.
- *
- * If the full data is available in (row-major) data buffers, you can use
- * :meth:`updateBatch() <VQF.updateBatch>`.
- *
- * This class is the main C++ implementation of the algorithm. Depending on use case and
- * programming language of choice, the following alternatives might be useful:
- *
- * +------------------------+--------------------------+--------------------------+---------------------------+
- * |                        | Full Version             | Basic Version            |
- * Offline Version           | |                        |                          | | |
- * +========================+==========================+==========================+===========================+
- * | **C++**                | **VQF (this class)**     | :cpp:class:`BasicVQF`    |
- * :cpp:func:`offlineVQF`    |
- * +------------------------+--------------------------+--------------------------+---------------------------+
- * | **Python/C++ (fast)**  | :py:class:`vqf.VQF`      | :py:class:`vqf.BasicVQF` |
- * :py:meth:`vqf.offlineVQF` |
- * +------------------------+--------------------------+--------------------------+---------------------------+
- * | **Pure Python (slow)** | :py:class:`vqf.PyVQF`    | --                       | -- |
- * +------------------------+--------------------------+--------------------------+---------------------------+
- * | **Pure Matlab (slow)** | :mat:class:`VQF.m <VQF>` | --                       | -- |
- * +------------------------+--------------------------+--------------------------+---------------------------+
- * \endrst
- */
 
 class VQF {
 public:
-	/**
-	 * Initializes the object with default parameters.
-	 *
-	 * In the most common case (using the default parameters and all data being sampled
-	 * with the same frequency, create the class like this: \rst
-	 * .. code-block:: c++
-	 *
-	 *     VQF vqf(0.01); // 0.01 s sampling time, i.e. 100 Hz
-	 * \endrst
-	 *
-	 * @param gyrTs sampling time of the gyroscope measurements in seconds
-	 * @param accTs sampling time of the accelerometer measurements in seconds (the
-	 * value of `gyrTs` is used if set to -1)
-	 * @param magTs sampling time of the magnetometer measurements in seconds (the value
-	 * of `gyrTs` is used if set to -1)
-	 *
-	 */
-	VQF(vqf_real_t gyrTs, vqf_real_t accTs = -1.0, vqf_real_t magTs = -1.0);
-	/**
-	 * @brief Initializes the object with custom parameters.
-	 *
-	 * Example code to create an object with magnetic disturbance rejection disabled:
-	 * \rst
-	 * .. code-block:: c++
-	 *
-	 *     VQFParams params;
-	 *     params.magDistRejectionEnabled = false;
-	 *     VQF vqf(0.01); // 0.01 s sampling time, i.e. 100 Hz
-	 * \endrst
-	 *
-	 * @param params VQFParams struct containing the desired parameters
-	 * @param gyrTs sampling time of the gyroscope measurements in seconds
-	 * @param accTs sampling time of the accelerometer measurements in seconds (the
-	 * value of `gyrTs` is used if set to -1)
-	 * @param magTs sampling time of the magnetometer measurements in seconds (the value
-	 * of `gyrTs` is used if set to -1)
-	 */
-	VQF(const VQFParams& params,
-		vqf_real_t gyrTs,
-		vqf_real_t accTs = -1.0,
-		vqf_real_t magTs = -1.0);
+    // Default sampling times in seconds
+    static constexpr float DEFAULT_GYRO_SAMPLING_TIME = 1.0f/400.0f;  // 400 Hz
+    static constexpr float DEFAULT_ACC_SAMPLING_TIME = 1.0f/100.0f;   // 100 Hz
+    static constexpr float DEFAULT_MAG_SAMPLING_TIME = 1.0f/100.0f;   // 100 Hz
 
-	/**
-	 * @brief Performs gyroscope update step.
-	 *
-	 * It is only necessary to call this function directly if gyroscope, accelerometers
-	 * and magnetometers have different sampling rates. Otherwise, simply use #update().
-	 *
-	 * @param gyr gyroscope measurement in rad/s
-	 */
-	void updateGyr(const vqf_real_t gyr[3], vqf_real_t gyrTs);
-	/**
-	 * @brief Performs accelerometer update step.
-	 *
-	 * It is only necessary to call this function directly if gyroscope, accelerometers
-	 * and magnetometers have different sampling rates. Otherwise, simply use #update().
-	 *
-	 * Should be called after #updateGyr and before #updateMag.
-	 *
-	 * @param acc accelerometer measurement in m/s²
-	 */
-	void updateAcc(const vqf_real_t acc[3]);
-	/**
-	 * @brief Performs magnetometer update step.
-	 *
-	 * It is only necessary to call this function directly if gyroscope, accelerometers
-	 * and magnetometers have different sampling rates. Otherwise, simply use #update().
-	 *
-	 * Should be called after #updateAcc.
-	 *
-	 * @param mag magnetometer measurement in arbitrary units
-	 */
-	void updateMag(const vqf_real_t mag[3]);
+    VQF(vqf_real_t gyrTs = DEFAULT_GYRO_SAMPLING_TIME, vqf_real_t accTs = -1.0f, vqf_real_t magTs = -1.0f);
+    VQF(const VQFParams& params, vqf_real_t gyrTs = DEFAULT_GYRO_SAMPLING_TIME, vqf_real_t accTs = -1.0f, vqf_real_t magTs = -1.0f);
 
-	/**
-	 * @brief Returns the angular velocity strapdown integration quaternion
-	 * \f$^{\mathcal{S}_i}_{\mathcal{I}_i}\mathbf{q}\f$.
-	 * @param out output array for the quaternion
-	 */
-	void getQuat3D(vqf_real_t out[4]) const;
-	/**
-	 * @brief Returns the 6D (magnetometer-free) orientation quaternion
-	 * \f$^{\mathcal{S}_i}_{\mathcal{E}_i}\mathbf{q}\f$.
-	 * @param out output array for the quaternion
-	 */
-	void getQuat6D(vqf_real_t out[4]) const;
-	/**
-	 * @brief Returns the 9D (with magnetometers) orientation quaternion
-	 * \f$^{\mathcal{S}_i}_{\mathcal{E}}\mathbf{q}\f$.
-	 * @param out output array for the quaternion
-	 */
-	void getQuat9D(vqf_real_t out[4]) const;
-	/**
-	 * @brief Returns the heading difference \f$\delta\f$ between \f$\mathcal{E}_i\f$
-	 * and \f$\mathcal{E}\f$.
-	 *
-	 * \f$^{\mathcal{E}_i}_{\mathcal{E}}\mathbf{q} = \begin{bmatrix}\cos\frac{\delta}{2}
-	 * & 0 & 0 & \sin\frac{\delta}{2}\end{bmatrix}^T\f$.
-	 *
-	 * @return delta angle in rad (VQFState::delta)
-	 */
-	vqf_real_t getDelta() const;
+    void updateGyr(const vqf_real_t gyr[3], vqf_real_t gyrTs);
+    void updateAcc(const vqf_real_t acc[3]);
+    void updateMag(const vqf_real_t mag[3]);
 
-	/**
-	 * @brief Returns the current gyroscope bias estimate and the uncertainty.
-	 *
-	 * The returned standard deviation sigma represents the estimation uncertainty in
-	 * the worst direction and is based on an upper bound of the largest eigenvalue of
-	 * the covariance matrix.
-	 *
-	 * @param out output array for the gyroscope bias estimate (rad/s)
-	 * @return standard deviation sigma of the estimation uncertainty (rad/s)
-	 */
-	vqf_real_t getBiasEstimate(vqf_real_t out[3]) const;
-	/**
-	 * @brief Sets the current gyroscope bias estimate and the uncertainty.
-	 *
-	 * If a value for the uncertainty sigma is given, the covariance matrix is set to a
-	 * corresponding scaled identity matrix.
-	 *
-	 * @param bias gyroscope bias estimate (rad/s)
-	 * @param sigma standard deviation of the estimation uncertainty (rad/s) - set to -1
-	 * (default) in order to not change the estimation covariance matrix
-	 */
-	void setBiasEstimate(vqf_real_t bias[3], vqf_real_t sigma = -1.0);
-	/**
-	 * @brief Returns true if rest was detected.
-	 */
-	bool getRestDetected() const;
-	/**
-	 * @brief Returns true if a disturbed magnetic field was detected.
-	 */
-	bool getMagDistDetected() const;
-	/**
-	 * @brief Returns the relative deviations used in rest detection.
-	 *
-	 * Looking at those values can be useful to understand how rest detection is working
-	 * and which thresholds are suitable. The output array is filled with the last
-	 * values for gyroscope and accelerometer, relative to the threshold. In order for
-	 * rest to be detected, both values must stay below 1.
-	 *
-	 * @param out output array of size 2 for the relative rest deviations
-	 */
-	void getRelativeRestDeviations(vqf_real_t out[2]) const;
-	/**
-	 * @brief Returns the norm of the currently accepted magnetic field reference.
-	 */
-	vqf_real_t getMagRefNorm() const;
-	/**
-	 * @brief Returns the dip angle of the currently accepted magnetic field reference.
-	 */
-	vqf_real_t getMagRefDip() const;
-	/**
-	 * @brief Overwrites the current magnetic field reference.
-	 * @param norm norm of the magnetic field reference
-	 * @param dip dip angle of the magnetic field reference
-	 */
-	void setMagRef(vqf_real_t norm, vqf_real_t dip);
+    // VR extensions
+    void vrInitSequence(float duration = 5.0f);
+    bool getPoseStability() const;
+    void getPredictedPose(vqf_real_t out[4], float predictionTime = 0.03f) const;
 
-	/**
-	 * @brief Sets the time constant for accelerometer low-pass filtering.
-	 *
-	 * For more details, see VQFParams.tauAcc.
-	 *
-	 * @param tauAcc time constant \f$\tau_\mathrm{acc}\f$ in seconds
-	 */
-	void setTauAcc(vqf_real_t tauAcc);
-	/**
-	 * @brief Sets the time constant for the magnetometer update.
-	 *
-	 * For more details, see VQFParams.tauMag.
-	 *
-	 * @param tauMag time constant \f$\tau_\mathrm{mag}\f$ in seconds
-	 */
-	void setTauMag(vqf_real_t tauMag);
-#ifndef VQF_NO_MOTION_BIAS_ESTIMATION
-	/**
-	 * @brief Enables/disabled gyroscope bias estimation during motion.
-	 */
-	void setMotionBiasEstEnabled(bool enabled);
-#endif
-	/**
-	 * @brief Enables/disables rest detection and bias estimation during rest.
-	 */
-	void setRestBiasEstEnabled(bool enabled);
-	/**
-	 * @brief Enables/disables magnetic disturbance detection and rejection.
-	 */
-	void setMagDistRejectionEnabled(bool enabled);
-	/**
-	 * @brief Sets the current thresholds for rest detection.
-	 *
-	 * For details about the parameters, see VQFParams.restThGyr and
-	 * VQFParams.restThAcc.
-	 */
-	void setRestDetectionThresholds(vqf_real_t thGyr, vqf_real_t thAcc);
+    // Configuration
+    void setTauAcc(vqf_real_t tauAcc);
+    void setTauMag(vqf_real_t tauMag);
+    void resetState();
 
-	/**
-	 * @brief Returns the current parameters.
-	 */
-	const VQFParams& getParams() const;
-	/**
-	 * @brief Returns the coefficients used by the algorithm.
-	 */
-	const VQFCoefficients& getCoeffs() const;
-	/**
-	 * @brief Returns the current state.
-	 */
-	const VQFState& getState() const;
-	/**
-	 * @brief Overwrites the current state.
-	 *
-	 * This method allows to set a completely arbitrary filter state and is intended for
-	 * debugging purposes. In combination with #getState, individual elements of the
-	 * state can be modified.
-	 *
-	 * @param state A VQFState struct containing the new state
-	 */
-	void setState(const VQFState& state);
-	/**
-	 * @brief Resets the state to the default values at initialization.
-	 *
-	 * Resetting the state is equivalent to creating a new instance of this class.
-	 */
-	void resetState();
+    // State access
+    void getQuat6D(vqf_real_t out[4]) const;
+    void getQuat9D(vqf_real_t out[4]) const;
+    vqf_real_t getDelta() const;
+    vqf_real_t getBiasEstimate(vqf_real_t out[3]) const;
+    bool getRestDetected() const;
+    bool getMagDistDetected() const;
 
-	/**
-	 * @brief Performs quaternion multiplication (\f$\mathbf{q}_\mathrm{out} =
-	 * \mathbf{q}_1 \otimes \mathbf{q}_2\f$).
-	 */
-	static void
-	quatMultiply(const vqf_real_t q1[4], const vqf_real_t q2[4], vqf_real_t out[4]);
-	/**
-	 * @brief Calculates the quaternion conjugate (\f$\mathbf{q}_\mathrm{out} =
-	 * \mathbf{q}^*\f$).
-	 */
-	static void quatConj(const vqf_real_t q[4], vqf_real_t out[4]);
-	/**
-	 * @brief Sets the output quaternion to the identity quaternion
-	 * (\f$\mathbf{q}_\mathrm{out} = \begin{bmatrix}1 & 0 & 0 & 0\end{bmatrix}\f$).
-	 */
-	static void quatSetToIdentity(vqf_real_t out[4]);
-	/**
-	 * @brief Applies a heading rotation by the angle delta (in rad) to a quaternion.
-	 *
-	 * \f$\mathbf{q}_\mathrm{out} = \begin{bmatrix}\cos\frac{\delta}{2} & 0 & 0 &
-	 * \sin\frac{\delta}{2}\end{bmatrix} \otimes \mathbf{q}\f$
-	 */
-	static void quatApplyDelta(vqf_real_t q[4], vqf_real_t delta, vqf_real_t out[4]);
-	/**
-	 * @brief Rotates a vector with a given quaternion.
-	 *
-	 * \f$\begin{bmatrix}0 & \mathbf{v}_\mathrm{out}\end{bmatrix} =
-	 * \mathbf{q} \otimes \begin{bmatrix}0 & \mathbf{v}\end{bmatrix} \otimes
-	 * \mathbf{q}^*\f$
-	 */
-	static void
-	quatRotate(const vqf_real_t q[4], const vqf_real_t v[3], vqf_real_t out[3]);
-	/**
-	 * @brief Calculates the Euclidean norm of a vector.
-	 * @param vec pointer to an array of N elements
-	 * @param N number of elements
-	 */
-	static vqf_real_t norm(const vqf_real_t vec[], size_t N);
-	/**
-	 * @brief Normalizes a vector in-place.
-	 * @param vec pointer to an array of N elements that will be normalized
-	 * @param N number of elements
-	 */
-	static void normalize(vqf_real_t vec[], size_t N);
-	/**
-	 * @brief Clips a vector in-place.
-	 * @param vec pointer to an array of N elements that will be clipped
-	 * @param N number of elements
-	 * @param min smallest allowed value
-	 * @param max largest allowed value
-	 */
-	static void clip(vqf_real_t vec[], size_t N, vqf_real_t min, vqf_real_t max);
-	/**
-	 * @brief Calculates the gain for a first-order low-pass filter from the 1/e time
-	 * constant.
-	 *
-	 * \f$k = 1 - \exp\left(-\frac{T_\mathrm{s}}{\tau}\right)\f$
-	 *
-	 * The cutoff frequency of the resulting filter is \f$f_\mathrm{c} =
-	 * \frac{1}{2\pi\tau}\f$.
-	 *
-	 * @param tau time constant \f$\tau\f$ in seconds - use -1 to disable update
-	 * (\f$k=0\f$) or 0 to obtain unfiltered values (\f$k=1\f$)
-	 * @param Ts sampling time \f$T_\mathrm{s}\f$ in seconds
-	 * @return filter gain *k*
-	 */
-	static vqf_real_t gainFromTau(vqf_real_t tau, vqf_real_t Ts);
-	/**
-	 * @brief Calculates coefficients for a second-order Butterworth low-pass filter.
-	 *
-	 * The filter is parametrized via the time constant of the dampened, non-oscillating
-	 * part of step response and the resulting cutoff frequency is \f$f_\mathrm{c} =
-	 * \frac{\sqrt{2}}{2\pi\tau}\f$.
-	 *
-	 * @param tau time constant \f$\tau\f$ in seconds
-	 * @param Ts sampling time \f$T_\mathrm{s}\f$ in seconds
-	 * @param outB output array for numerator coefficients
-	 * @param outA output array for denominator coefficients (without \f$a_0=1\f$)
-	 */
-	static void
-	filterCoeffs(vqf_real_t tau, vqf_real_t Ts, vqf_real_t outB[3], vqf_real_t outA[2]);
-	/**
-	 * @brief Calculates the initial filter state for a given steady-state value.
-	 * @param x0 steady state value
-	 * @param b numerator coefficients
-	 * @param a denominator coefficients (without \f$a_0=1\f$)
-	 * @param out output array for filter state
-	 */
-	static void filterInitialState(
-		vqf_real_t x0,
-		const vqf_real_t b[],
-		const vqf_real_t a[],
-		vqf_real_t out[2]
-	);
-	/**
-	 * @brief Adjusts the filter state when changing coefficients.
-	 *
-	 * This function assumes that the filter is currently in a steady state, i.e. the
-	 * last input values and the last output values are all equal. Based on this, the
-	 * filter state is adjusted to new filter coefficients so that the output does not
-	 * jump.
-	 *
-	 * @param last_y last filter output values (array of size N)
-	 * @param N number of values in vector-valued signal
-	 * @param b_old previous numerator coefficients
-	 * @param a_old previous denominator coefficients (without \f$a_0=1\f$)
-	 * @param b_new new numerator coefficients
-	 * @param a_new new denominator coefficients (without \f$a_0=1\f$)
-	 * @param state filter state (array of size N*2, will be modified)
-	 */
-	static void filterAdaptStateForCoeffChange(
-		vqf_real_t last_y[],
-		size_t N,
-		const vqf_real_t b_old[3],
-		const vqf_real_t a_old[2],
-		const vqf_real_t b_new[3],
-		const vqf_real_t a_new[2],
-		vqf_real_t state[]
-	);
-	/**
-	 * @brief Performs a filter step for a scalar value.
-	 * @param x input value
-	 * @param b numerator coefficients
-	 * @param a denominator coefficients (without \f$a_0=1\f$)
-	 * @param state filter state array (will be modified)
-	 * @return filtered value
-	 */
-	static vqf_real_t
-	filterStep(vqf_real_t x, const vqf_real_t b[3], const vqf_real_t a[2], vqf_real_t state[2]);
-	/**
-	 * @brief Performs filter step for vector-valued signal with averaging-based
-	 * initialization.
-	 *
-	 * During the first \f$\tau\f$ seconds, the filter output is the mean of the
-	 * previous samples. At \f$t=\tau\f$, the initial conditions for the low-pass filter
-	 * are calculated based on the current mean value and from then on, regular
-	 * filtering with the rational transfer function described by the coefficients b and
-	 * a is performed.
-	 *
-	 * @param x input values (array of size N)
-	 * @param N number of values in vector-valued signal
-	 * @param tau filter time constant \f$\tau\f$ in seconds (used for initialization)
-	 * @param Ts sampling time \f$T_\mathrm{s}\f$ in seconds (used for initialization)
-	 * @param b numerator coefficients
-	 * @param a denominator coefficients (without \f$a_0=1\f$)
-	 * @param state filter state (array of size N*2, will be modified)
-	 * @param out output array for filtered values (size N)
-	 */
-	static void filterVec(
-		const vqf_real_t x[],
-		size_t N,
-		vqf_real_t tau,
-		vqf_real_t Ts,
-		const vqf_real_t b[3],
-		const vqf_real_t a[2],
-		vqf_real_t state[],
-		vqf_real_t out[]
-	);
-#ifndef VQF_NO_MOTION_BIAS_ESTIMATION
-	/**
-	 * @brief Sets a 3x3 matrix to a scaled version of the identity matrix.
-	 * @param scale value of diagonal elements
-	 * @param out output array of size 9 (3x3 matrix stored in row-major order)
-	 */
-	static void matrix3SetToScaledIdentity(vqf_real_t scale, vqf_real_t out[9]);
-	/**
-	 * @brief Performs 3x3 matrix multiplication (\f$\mathbf{M}_\mathrm{out} =
-	 * \mathbf{M}_1\mathbf{M}_2\f$).
-	 * @param in1 input 3x3 matrix \f$\mathbf{M}_1\f$ (stored in row-major order)
-	 * @param in2 input 3x3 matrix \f$\mathbf{M}_2\f$ (stored in row-major order)
-	 * @param out output 3x3 matrix \f$\mathbf{M}_\mathrm{out}\f$ (stored in row-major
-	 * order)
-	 */
-	static void matrix3Multiply(
-		const vqf_real_t in1[9],
-		const vqf_real_t in2[9],
-		vqf_real_t out[9]
-	);
-	/**
-	 * @brief Performs 3x3 matrix multiplication after transposing the first matrix
-	 * (\f$\mathbf{M}_\mathrm{out} = \mathbf{M}_1^T\mathbf{M}_2\f$).
-	 * @param in1 input 3x3 matrix \f$\mathbf{M}_1\f$ (stored in row-major order)
-	 * @param in2 input 3x3 matrix \f$\mathbf{M}_2\f$ (stored in row-major order)
-	 * @param out output 3x3 matrix \f$\mathbf{M}_\mathrm{out}\f$ (stored in row-major
-	 * order)
-	 */
-	static void matrix3MultiplyTpsFirst(
-		const vqf_real_t in1[9],
-		const vqf_real_t in2[9],
-		vqf_real_t out[9]
-	);
-	/**
-	 * @brief Performs 3x3 matrix multiplication after transposing the second matrix
-	 * (\f$\mathbf{M}_\mathrm{out} = \mathbf{M}_1\mathbf{M}_2^T\f$).
-	 * @param in1 input 3x3 matrix \f$\mathbf{M}_1\f$ (stored in row-major order)
-	 * @param in2 input 3x3 matrix \f$\mathbf{M}_2\f$ (stored in row-major order)
-	 * @param out output 3x3 matrix \f$\mathbf{M}_\mathrm{out}\f$ (stored in row-major
-	 * order)
-	 */
-	static void matrix3MultiplyTpsSecond(
-		const vqf_real_t in1[9],
-		const vqf_real_t in2[9],
-		vqf_real_t out[9]
-	);
-	/**
-	 * @brief Calculates the inverse of a 3x3 matrix (\f$\mathbf{M}_\mathrm{out} =
-	 * \mathbf{M}^{-1}\f$).
-	 * @param in input 3x3 matrix \f$\mathbf{M}\f$ (stored in row-major order)
-	 * @param out output 3x3 matrix \f$\mathbf{M}_\mathrm{out}\f$ (stored in row-major
-	 * order)
-	 */
-	static bool matrix3Inv(const vqf_real_t in[9], vqf_real_t out[9]);
-#endif
+private:
+    VQFParams params;
+    VQFState state;
 
-	void updateBiasForgettingTime(float biasForgettingTime);
+    struct Coefficients {
+        vqf_real_t gyrTs, accTs, magTs;
+        vqf_real_t accLpB[3], accLpA[2];
+        vqf_real_t kMag;
+        vqf_real_t biasP0, biasV, biasRestW;
+        vqf_real_t restGyrLpB[3], restGyrLpA[2];
+        vqf_real_t restAccLpB[3], restAccLpA[2];
+        vqf_real_t kMagRef;
+        vqf_real_t magNormDipLpB[3], magNormDipLpA[2];
+    } coeffs;
 
-protected:
-	/**
-	 * @brief Calculates coefficients based on parameters and sampling rates.
-	 */
-	void setup();
-
-	/**
-	 * @brief Contains the current parameters.
-	 *
-	 * See #getParams. To set parameters, pass them to the constructor. Part of the
-	 * parameters can be changed with #setTauAcc, #setTauMag, #setMotionBiasEstEnabled,
-	 * #setRestBiasEstEnabled, #setMagDistRejectionEnabled, and
-	 * #setRestDetectionThresholds.
-	 */
-	VQFParams params;
-	/**
-	 * @brief Contains the current state.
-	 *
-	 * See #getState, #getState and #resetState.
-	 */
-	VQFState state;
-	/**
-	 * @brief Contains the current coefficients (calculated in #setup).
-	 *
-	 * See #getCoeffs.
-	 */
-	VQFCoefficients coeffs;
+    void setup();
+    void handleVrMotionAnomaly();
+    void filterVec(const vqf_real_t x[], size_t N, vqf_real_t tau, vqf_real_t Ts,
+                   const vqf_real_t b[3], const vqf_real_t a[2], vqf_real_t state[], vqf_real_t out[]);
+    static void quatMultiply(const vqf_real_t q1[4], const vqf_real_t q2[4], vqf_real_t out[4]);
+    static void quatRotate(const vqf_real_t q[4], const vqf_real_t v[3], vqf_real_t out[3]);
+    static void quatApplyDelta(vqf_real_t q[4], vqf_real_t delta, vqf_real_t out[4]);
+    static vqf_real_t norm(const vqf_real_t vec[], size_t N);
+    static void normalize(vqf_real_t vec[], size_t N);
+    static vqf_real_t gainFromTau(vqf_real_t tau, vqf_real_t Ts);
+    static void filterCoeffs(vqf_real_t tau, vqf_real_t Ts, vqf_real_t outB[3], vqf_real_t outA[2]);
 };
 
-#endif  // VQF_HPP
+#endif // VQF_H
