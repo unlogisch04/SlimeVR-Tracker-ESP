@@ -60,7 +60,7 @@
 #define samplingRateInMillis 10
 
 // Sleeping options
-#define POWERSAVING_MODE POWER_SAVING_LEGACY  // Minimum causes sporadic data pauses
+#define POWERSAVING_MODE POWER_SAVING_MINIMUM  // Minimum causes sporadic data pauses
 #if POWERSAVING_MODE >= POWER_SAVING_MINIMUM
 #define TARGET_LOOPTIME_MICROS (samplingRateInMillis * 1000)
 #endif
@@ -82,7 +82,7 @@
 // If "false" updates are sent at the sensor update rate (usually 100 TPS)
 // If "true" updates will be less frequent in the time of little motion
 // Experimental
-#define OPTIMIZE_UPDATES true
+#define OPTIMIZE_UPDATES false
 
 #define I2C_SPEED 400000
 
