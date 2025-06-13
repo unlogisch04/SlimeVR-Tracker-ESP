@@ -173,6 +173,16 @@ BATTERY_SHIELD_R(0)
 BATTERY_R1(10)
 BATTERY_R2(40.2)
 
+#elif BOARD == BOARD_ESP32C5DEVKITC1
+
+SDA(LP_SDA)
+SCL(LP_SCL)
+INT(255)
+INT2(255)
+BATTERY(255)
+LED(LED_BUILTIN)
+INVERTED_LED(false)
+
 #endif
 
 // Default IMU pinouts and definitions for default tracker types
@@ -221,7 +231,7 @@ PIN_IMU_SDA, PRIMARY_IMU_OPTIONAL, BMI160_QMC_REMAP) \
 #define SENSOR_DESC_LIST                       \
 	SENSOR_DESC_ENTRY(                         \
 		IMU,                                   \
-		PRIMARY_IMU_ADDRESS_ONE,               \
+		SECONDARY_IMU_ADDRESS_TWO,             \
 		IMU_ROTATION,                          \
 		DIRECT_WIRE(PIN_IMU_SCL, PIN_IMU_SDA), \
 		PRIMARY_IMU_OPTIONAL,                  \
@@ -230,7 +240,7 @@ PIN_IMU_SDA, PRIMARY_IMU_OPTIONAL, BMI160_QMC_REMAP) \
 	)                                          \
 	SENSOR_DESC_ENTRY(                         \
 		SECOND_IMU,                            \
-		SECONDARY_IMU_ADDRESS_TWO,             \
+		PRIMARY_IMU_ADDRESS_ONE,               \
 		SECOND_IMU_ROTATION,                   \
 		DIRECT_WIRE(PIN_IMU_SCL, PIN_IMU_SDA), \
 		SECONDARY_IMU_OPTIONAL,                \

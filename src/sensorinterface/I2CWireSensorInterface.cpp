@@ -50,7 +50,7 @@ void swapI2C(uint8_t sclPin, uint8_t sdaPin) {
 		}
 
 		if (isI2CActive) {
-			i2c_set_pin(I2C_NUM_0, sdaPin, sclPin, false, false, I2C_MODE_MASTER);
+//			i2c_set_pin(I2C_NUM_0, sdaPin, sclPin, false, false, I2C_MODE_MASTER);
 		} else {
 			Wire.begin(static_cast<int>(sdaPin), static_cast<int>(sclPin), I2C_SPEED);
 			Wire.setTimeOut(150);
