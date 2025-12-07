@@ -19,6 +19,11 @@ jobs:
           cp platformio.ini platformio-tools.ini
           sed -i 's/^custom_slime_board =/;custom_slime_board =/g' platformio-tools.ini
 
+      - name: Set Git user identity
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "ci-bot@users.noreply.github.com"
+
       - name: Commit & Push changes (if any)
         run: |
           git add platformio-tools.ini
