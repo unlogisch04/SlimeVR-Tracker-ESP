@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - w_main
+  workflow_dispatch: 
 
 jobs:
   patch-file:
