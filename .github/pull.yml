@@ -1,0 +1,8 @@
+pulls:
+  - upstream: SlimeVR/SlimeVR-Tracker-ESP
+    upstream-branch: main
+    branch: w_main
+    method: merge
+    title: "Automated Upstream Sync"
+    body: "This PR merges the latest upstream changes from SlimeVR/SlimeVR-Tracker-ESP/main into w_main."
+    
