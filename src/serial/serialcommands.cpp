@@ -175,6 +175,15 @@ void cmdSet(CmdParser* parser) {
 #else
 			logger.info("Flash mode not supported on this platform!");
 #endif
+#if EXT_SERIAL_COMMANDS
+// Add a crash command for testing safe mode entry
+		} else if (parser->equalCmdParam(1, "CRASH")) {
+				while (true) {
+//				let it crash to trigger safe mode if configured
+					int* ptr = nullptr;
+					*ptr = 0;  // Intentional crash
+				}
+#endif
 		} else {
 			logger.error("CMD SET ERROR: Unrecognized variable to set");
 		}
