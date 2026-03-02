@@ -693,7 +693,6 @@ void Connection::update() {
 	// On ESP-IDF discarde remaining bytes if the packet was too big for the buffer.
 	if (m_UDP.available() > 0) {
 		UDP_CLEAR_BUFFER
-		m_UDP.flush();
 	}
 #endif
 
