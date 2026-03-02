@@ -29,6 +29,12 @@
 #include "logging/Logger.h"
 #include "packets.h"
 
+#ifdef ESP32
+#define UDP_CLEAR_BUFFER m_UDP.flush();
+#else
+#define UDP_CLEAR_BUFFER
+#endif
+
 #define TIMEOUT 3000UL
 
 template <typename T>
@@ -541,11 +547,18 @@ void Connection::searchForServer() {
 	while (true) {
 		int packetSize = m_UDP.parsePacket();
 		if (!packetSize) {
+			UDP_CLEAR_BUFFER
 			break;
 		}
 
 		// receive incoming UDP packets
 		[[maybe_unused]] int len = m_UDP.read(m_Packet, sizeof(m_Packet));
+#if defined(ESP32)
+		// On ESP-IDF discarde remaining bytes if the packet was too big for the buffer.
+		if (m_UDP.available() > 0) {
+			UDP_CLEAR_BUFFER
+		}
+#endif
 
 #ifdef DEBUG_NETWORK
 		m_Logger.trace(
@@ -659,12 +672,30 @@ void Connection::update() {
 		return;
 	}
 
+	// if the packet is not from the server, ignore it
+	if (m_UDP.remoteIP() != m_ServerHost) {
+		UDP_CLEAR_BUFFER
+		return;
+	}
+
 	int packetSize = m_UDP.parsePacket();
 	if (!packetSize) {
+		// On ESP32/ESP-IDF:
+		// parsePacket returns 0 if
+		//   - there are no packets available, or
+		//   - the last packet was too big for the buffer (more bytes to read)
+		UDP_CLEAR_BUFFER
 		return;
 	}
 
 	int len = m_UDP.read(m_Packet, sizeof(m_Packet));
+#if defined(ESP32)
+	// On ESP-IDF discarde remaining bytes if the packet was too big for the buffer.
+	if (m_UDP.available() > 0) {
+		UDP_CLEAR_BUFFER
+		m_UDP.flush();
+	}
+#endif
 
 #ifdef DEBUG_NETWORK
 	m_Logger.trace(
