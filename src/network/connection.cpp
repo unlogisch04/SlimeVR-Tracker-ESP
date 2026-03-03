@@ -30,7 +30,7 @@
 #include "packets.h"
 
 #ifdef ESP32
-#define UDP_CLEAR_BUFFER m_UDP.flush();
+#define UDP_CLEAR_BUFFER m_UDP.clear();
 #else
 #define UDP_CLEAR_BUFFER
 #endif
