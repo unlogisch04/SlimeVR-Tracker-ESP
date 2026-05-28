@@ -176,7 +176,19 @@ public:
 			  SensorType::AccTs,
 			  SensorType::MagTs
 		  )
-		, m_sensor(registerInterface, m_Logger) {}
+		, m_sensor(registerInterface, m_Logger) {
+		m_driverCallbacks.processAccelSample
+			= [this](const RawSensorT sample[3], float AccTs) {
+				processAccelSample(sample, AccTs);
+			};
+		m_driverCallbacks.processGyroSample
+			= [this](const RawSensorT sample[3], float GyrTs) {
+				processGyroSample(sample, GyrTs);
+			};
+		m_driverCallbacks.processTempSample = [this](int16_t sample, float TempTs) {
+			processTempSample(sample, TempTs);
+		};
+	}
 	~SoftFusionSensor() override = default;
 
 	void checkSensorTimeout() {
@@ -241,17 +253,25 @@ public:
 		constexpr uint32_t sendInterval = 1.0f / maxSendRateHz * 1e6f;
 		elapsed = now - m_lastRotationPacketSent;
 		if (elapsed >= sendInterval) {
-			auto overwhelmed = m_sensor.bulkRead({
-				[&](const auto sample[3], float AccTs) {
-					processAccelSample(sample, AccTs);
-				},
-				[&](const auto sample[3], float GyrTs) {
-					processGyroSample(sample, GyrTs);
-				},
-				[&](int16_t sample, float TempTs) {
-					processTempSample(sample, TempTs);
-				},
-			});
+			auto overwhelmed = [&]() {
+				if constexpr (requires(SensorType& sensor, DriverCallbacks<RawSensorT>& cb) {
+							  sensor.bulkRead(cb);
+						  }) {
+					return m_sensor.bulkRead(m_driverCallbacks);
+				}
+
+				return m_sensor.bulkRead({
+					[&](const auto sample[3], float AccTs) {
+						processAccelSample(sample, AccTs);
+					},
+					[&](const auto sample[3], float GyrTs) {
+						processGyroSample(sample, GyrTs);
+					},
+					[&](int16_t sample, float TempTs) {
+						processTempSample(sample, TempTs);
+					},
+				});
+			}();
 			if (overwhelmed) {
 				calibrator.signalOverwhelmed();
 			}
@@ -283,6 +303,11 @@ public:
 
 		SlimeVR::Configuration::SensorConfig sensorCalibration
 			= configuration.getSensor(sensorId);
+		m_Logger.info(
+			"Sensor %d loaded calibration config type=%d",
+			sensorId,
+			static_cast<int>(sensorCalibration.type)
+		);
 
 		toggles = configuration.getSensorToggles(sensorId);
 
@@ -376,6 +401,7 @@ public:
 
 	SensorFusion m_fusion;
 	SensorType m_sensor;
+	DriverCallbacks<RawSensorT> m_driverCallbacks;
 	Calib calibrator{m_fusion, m_sensor, sensorId, m_Logger, toggles};
 
 	SensorStatus m_status = SensorStatus::SENSOR_OFFLINE;

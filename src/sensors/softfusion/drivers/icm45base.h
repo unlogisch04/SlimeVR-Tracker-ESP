@@ -238,7 +238,102 @@ struct ICM45Base {
 	// stack overflow and panic
 	std::vector<uint8_t> read_buffer;
 
-	bool bulkRead(DriverCallbacks<int32_t>&& callbacks) {
+	#if defined(__GNUC__)
+	__attribute__((noinline))
+	#endif
+	void readFifoBytes(size_t bytes_to_read) {
+		m_RegisterInterface
+			.readBytes(BaseRegs::FifoData, bytes_to_read, read_buffer.data());
+	}
+
+	#if defined(__GNUC__)
+	__attribute__((noinline))
+	#endif
+	void callGyro(
+		DriverCallbacks<int32_t>& callbacks,
+		const int32_t gyroData[3]
+	) {
+		if (!callbacks.processGyroSample) {
+			m_Logger.error("ICM45 missing gyro callback");
+			return;
+		}
+		callbacks.processGyroSample(gyroData, GyrTs);
+	}
+
+	#if defined(__GNUC__)
+	__attribute__((noinline))
+	#endif
+	void callAccel(
+		DriverCallbacks<int32_t>& callbacks,
+		const int32_t accelData[3]
+	) {
+		if (!callbacks.processAccelSample) {
+			m_Logger.error("ICM45 missing accel callback");
+			return;
+		}
+		callbacks.processAccelSample(accelData, AccTs);
+	}
+
+	#if defined(__GNUC__)
+	__attribute__((noinline))
+	#endif
+	void callTemp(DriverCallbacks<int32_t>& callbacks, int16_t tempData) {
+		if (!callbacks.processTempSample) {
+			m_Logger.error("ICM45 missing temp callback");
+			return;
+		}
+		callbacks.processTempSample(tempData, TempTs);
+	}
+
+	#if defined(__GNUC__)
+	__attribute__((noinline))
+	#endif
+	void processPacket(
+		size_t offset,
+		DriverCallbacks<int32_t>& callbacks,
+		const int16_t InvalidReading
+	) {
+		uint8_t header = read_buffer[offset];
+		bool has_gyro = header & (1 << 5);
+		bool has_accel = header & (1 << 6);
+
+		FifoEntryAligned entry;
+		memcpy(
+			&entry,
+			&read_buffer[offset + 0x1],
+			sizeof(FifoEntryAligned)
+		);  // skip fifo header
+
+		if (has_gyro && entry.gyro[0] != InvalidReading) {
+			const int32_t gyroData[3]{
+				static_cast<int32_t>(entry.gyro[0]) << 4 | (entry.lsb[0] & 0xf),
+				static_cast<int32_t>(entry.gyro[1]) << 4 | (entry.lsb[1] & 0xf),
+				static_cast<int32_t>(entry.gyro[2]) << 4 | (entry.lsb[2] & 0xf),
+			};
+			callGyro(callbacks, gyroData);
+		}
+
+		if (has_accel && entry.accel[0] != InvalidReading) {
+			const int32_t accelData[3]{
+				static_cast<int32_t>(entry.accel[0]) << 4
+					| (static_cast<int32_t>((entry.lsb[0]) & 0xf0) >> 4),
+				static_cast<int32_t>(entry.accel[1]) << 4
+					| (static_cast<int32_t>((entry.lsb[1]) & 0xf0) >> 4),
+				static_cast<int32_t>(entry.accel[2]) << 4
+					| (static_cast<int32_t>((entry.lsb[2]) & 0xf0) >> 4),
+			};
+			callAccel(callbacks, accelData);
+		}
+
+		if (entry.temp != 0x8000) {
+			callTemp(callbacks, static_cast<int16_t>(entry.temp));
+		}
+	}
+
+	#if defined(__GNUC__)
+	__attribute__((noinline))
+	#endif
+	bool bulkReadImpl(DriverCallbacks<int32_t>& callbacks) {
 		constexpr int16_t InvalidReading = -32768;
 
 		size_t fifo_packets = m_RegisterInterface.readReg16(BaseRegs::FifoCount);
@@ -267,48 +362,34 @@ struct ICM45Base {
 		auto packets_to_read = std::min(fifo_packets, MaxReadings);
 
 		size_t bytes_to_read = packets_to_read * FullFifoEntrySize;
-		m_RegisterInterface
-			.readBytes(BaseRegs::FifoData, bytes_to_read, read_buffer.data());
+		if (bytes_to_read == 0) {
+			return false;
+		}
+
+		if (read_buffer.size() < bytes_to_read || read_buffer.data() == nullptr) {
+			m_Logger.error(
+				"ICM45 bulkRead buffer invalid size=%u needed=%u",
+				static_cast<unsigned>(read_buffer.size()),
+				static_cast<unsigned>(bytes_to_read)
+			);
+			return false;
+		}
+
+		readFifoBytes(bytes_to_read);
 
 		for (auto i = 0u; i < bytes_to_read; i += FullFifoEntrySize) {
-			uint8_t header = read_buffer[i];
-			bool has_gyro = header & (1 << 5);
-			bool has_accel = header & (1 << 6);
-
-			FifoEntryAligned entry;
-			memcpy(
-				&entry,
-				&read_buffer[i + 0x1],
-				sizeof(FifoEntryAligned)
-			);  // skip fifo header
-
-			if (has_gyro && entry.gyro[0] != InvalidReading) {
-				const int32_t gyroData[3]{
-					static_cast<int32_t>(entry.gyro[0]) << 4 | (entry.lsb[0] & 0xf),
-					static_cast<int32_t>(entry.gyro[1]) << 4 | (entry.lsb[1] & 0xf),
-					static_cast<int32_t>(entry.gyro[2]) << 4 | (entry.lsb[2] & 0xf),
-				};
-				callbacks.processGyroSample(gyroData, GyrTs);
-			}
-
-			if (has_accel && entry.accel[0] != InvalidReading) {
-				const int32_t accelData[3]{
-					static_cast<int32_t>(entry.accel[0]) << 4
-						| (static_cast<int32_t>((entry.lsb[0]) & 0xf0) >> 4),
-					static_cast<int32_t>(entry.accel[1]) << 4
-						| (static_cast<int32_t>((entry.lsb[1]) & 0xf0) >> 4),
-					static_cast<int32_t>(entry.accel[2]) << 4
-						| (static_cast<int32_t>((entry.lsb[2]) & 0xf0) >> 4),
-				};
-				callbacks.processAccelSample(accelData, AccTs);
-			}
-
-			if (entry.temp != 0x8000) {
-				callbacks.processTempSample(static_cast<int16_t>(entry.temp), TempTs);
-			}
+			processPacket(i, callbacks, InvalidReading);
 		}
 
 		return fifo_packets > MaxReadings;
+	}
+
+	bool bulkRead(DriverCallbacks<int32_t>& callbacks) {
+		return bulkReadImpl(callbacks);
+	}
+
+	bool bulkRead(DriverCallbacks<int32_t>&& callbacks) {
+		return bulkReadImpl(callbacks);
 	}
 
 	template <typename Reg>
