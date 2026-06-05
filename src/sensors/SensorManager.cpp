@@ -70,8 +70,9 @@ void SensorManager::update() {
 #endif
 	for (auto& sensor : m_Sensors) {
 #if DEBUG_MEASURE_TIME_TAKEN
-		timingsMeasurer.before(11 + sensorcount);
+		timingsMeasurer.before(12 + sensorcount);
 #endif
+
 		if (sensor->isWorking()) {
 			if (sensor->m_hwInterface != nullptr) {
 				sensor->m_hwInterface->swapIn();
@@ -81,15 +82,22 @@ void SensorManager::update() {
 		if (sensor->getSensorState() == SensorStatus::SENSOR_ERROR) {
 			allIMUGood = false;
 		}
+
 #if DEBUG_MEASURE_TIME_TAKEN
-		timingsMeasurer.after(11 + sensorcount);
+		timingsMeasurer.after(12 + sensorcount);
 		sensorcount++;
 #endif
 	}
 
 	statusManager.setStatus(SlimeVR::Status::IMU_ERROR, !allIMUGood);
 
+#if DEBUG_MEASURE_TIME_TAKEN
+	timingsMeasurer.before(11);
+#endif
 	if (!networkConnection.isConnected()) {
+#if DEBUG_MEASURE_TIME_TAKEN
+	timingsMeasurer.after(11);
+#endif
 		return;
 	}
 
@@ -115,6 +123,9 @@ void SensorManager::update() {
 	}
 
 	if (!shouldSend) {
+#if DEBUG_MEASURE_TIME_TAKEN
+		timingsMeasurer.after(11);
+#endif
 		return;
 	}
 
@@ -133,6 +144,10 @@ void SensorManager::update() {
 
 #if PACKET_BUNDLING != PACKET_BUNDLING_DISABLED
 	networkConnection.endBundle();
+#endif
+
+#if DEBUG_MEASURE_TIME_TAKEN
+	timingsMeasurer.after(11);
 #endif
 }
 

@@ -106,6 +106,14 @@
 #define USE_RUNTIME_CALIBRATION true
 #endif
 
+// DEBUG_MEASURE_TIME_TAKEN:
+// If set to true, the time taken by different parts of the code will be measured and
+// printed to the serial output This can be used to identify bottlenecks and optimize
+// the code Note:
+// - This will add some overhead to the code, so it should only be used for debugging
+//   purposes
+// - Need modifications for different ammounts of IMUs used (more than 2 will require
+//   changes) like for Gloves
 #ifndef DEBUG_MEASURE_TIME_TAKEN
 #define DEBUG_MEASURE_TIME_TAKEN true
 #endif

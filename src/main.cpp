@@ -62,6 +62,7 @@ std::vector<const char*> timingNames
 	   "I2CSCAN::update()",
 	   "TARGET_LOOPTIME_MICROS",
 	   "Serial printState()",
+	   "sensorManager Network",
 	   "IMU1 Sensor loop",
 	   "IMU2 Sensor loop"};
 SlimeVR::Debugging::TimeTakenMeasurer timingsMeasurer(timingNames);
