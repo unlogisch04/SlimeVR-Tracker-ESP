@@ -25,12 +25,13 @@
 
 #include "SensorBuilder.h"
 
-namespace SlimeVR::Sensors {
-
 #if DEBUG_MEASURE_TIME_TAKEN
 #include "debugging/TimeTaken.h"
 extern SlimeVR::Debugging::TimeTakenMeasurer timingsMeasurer;
 #endif
+
+namespace SlimeVR::Sensors {
+
 void SensorManager::setup() {
 	if (m_MCP.begin_I2C()) {
 		m_Logger.info("MCP initialized");
@@ -67,13 +68,7 @@ void SensorManager::update() {
 #if DEBUG_MEASURE_TIME_TAKEN
 	uint8_t sensorcount = 0;
 #endif
-#if DEBUG_MEASURE_TIME_TAKEN
-	uint8_t sensorcount = 0;
-#endif
 	for (auto& sensor : m_Sensors) {
-#if DEBUG_MEASURE_TIME_TAKEN
-		timingsMeasurer.before(11 + sensorcount);
-#endif
 #if DEBUG_MEASURE_TIME_TAKEN
 		timingsMeasurer.before(11 + sensorcount);
 #endif
@@ -86,10 +81,6 @@ void SensorManager::update() {
 		if (sensor->getSensorState() == SensorStatus::SENSOR_ERROR) {
 			allIMUGood = false;
 		}
-#if DEBUG_MEASURE_TIME_TAKEN
-		timingsMeasurer.after(11 + sensorcount);
-		sensorcount++;
-#endif
 #if DEBUG_MEASURE_TIME_TAKEN
 		timingsMeasurer.after(11 + sensorcount);
 		sensorcount++;
