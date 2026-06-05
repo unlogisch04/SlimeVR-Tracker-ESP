@@ -62,7 +62,19 @@ void Logger::log(Level level, const char* format, va_list args) const {
 		strcat(buf, ":");
 		strcat(buf, m_Tag);
 	}
+	char fullMessage[strlen(levelToString(level)) +strlen(buf) + strlen(buffer) + 10];
+	snprintf(fullMessage, sizeof(fullMessage), "[%-5s] [%s] %s\n", levelToString(level), buf, buffer);
 
-	Serial.printf("[%-5s] [%s] %s\n", levelToString(level), buf, buffer);
+	if (!LogBuffer::getInstance().addLog(fullMessage)) {
+		// Buffer full, try to make space
+		LogBuffer::getInstance().processCycle();
+		// Try again (most messages are less than 127 bytes)
+		if (!LogBuffer::getInstance().addLog(fullMessage)) {
+			// Still cant add force flush and add
+			LogBuffer::getInstance().flushAll();
+			Serial.println("Buffer Flushed Due to Log Overflow");
+			LogBuffer::getInstance().addLog(fullMessage);
+		}
+	}
 }
 }  // namespace SlimeVR::Logging

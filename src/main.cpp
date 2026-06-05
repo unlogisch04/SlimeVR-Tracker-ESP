@@ -222,6 +222,10 @@ void loop() {
 	loopTime = micros();
 	BENCHMARK_END(9)
 #endif
+	BENCHMARK_START(9)
+	// Process buffered logs
+	SlimeVR::Logging::LogBuffer::getInstance().processCycle();
+	BENCHMARK_END(9)
 	BENCHMARK_START(10)
 #if defined(PRINT_STATE_EVERY_MS) && PRINT_STATE_EVERY_MS > 0
 	unsigned long now = millis();

@@ -4,6 +4,7 @@
 #include <Arduino.h>
 
 #include "Level.h"
+#include "LogBuffer.h"
 #include "debug.h"
 
 namespace SlimeVR::Logging {
@@ -79,6 +80,7 @@ private:
 			strcat(buf, m_Tag);
 		}
 
+		// TODO: Convert to LogBuffer to avoid overhead of printf and multiple Serial.print calls
 		Serial.printf("[%-5s] [%s] %s", levelToString(level), buf, str);
 
 		for (size_t i = 0; i < size; i++) {
