@@ -81,7 +81,10 @@ private:
 		}
 
 		// TODO: Convert to LogBuffer to avoid overhead of printf and multiple Serial.print calls
+		// 6 chars for [] and space, 2 for \n 2 for null terminator
+		char fullMessage[strlen(levelToString(level)) +strlen(buf) + strlen(str) + 6 + size + 4];  // extra space for array contents
 		Serial.printf("[%-5s] [%s] %s", levelToString(level), buf, str);
+		fnprintf(fullMessage, "[%-5s] [%s] %s", levelToString(level), buf, str);
 
 		for (size_t i = 0; i < size; i++) {
 			Serial.print(array[i]);
