@@ -224,4 +224,7 @@ void loop() {
 	}
 	printStateBM.after();
 #endif
+
+	SlimeVR::Debugging::Benchmark::tick();
+	SlimeVR::Logging::Logger::tick();
 }

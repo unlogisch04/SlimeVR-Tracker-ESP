@@ -63,6 +63,8 @@ public:
 		logArray(FATAL, str, array, size);
 	}
 
+	static void tick();
+
 private:
 	void log(Level level, const char* str, va_list args) const;
 
