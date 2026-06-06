@@ -107,7 +107,7 @@
 #endif
 
 #ifndef DEBUG_MEASURE_TIME_TAKEN
-#define DEBUG_MEASURE_TIME_TAKEN true
+#define DEBUG_MEASURE_TIME_TAKEN false
 #endif
 
 #ifndef USE_OTA_TIMEOUT
