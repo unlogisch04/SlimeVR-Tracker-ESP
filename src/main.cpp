@@ -43,8 +43,6 @@ SlimeVR::LEDManager ledManager;
 SlimeVR::Status::StatusManager statusManager;
 SlimeVR::Configuration::Configuration configuration;
 SlimeVR::Network::Manager networkManager;
-SlimeVR::Network::Connection networkConnection;
-SlimeVR::WiFiNetwork wifiNetwork;
 SlimeVR::WifiProvisioning wifiProvisioning;
 
 SlimeVR::Debugging::Benchmark tpsCounterBM{"tpsCounter.update()"};
@@ -184,6 +182,8 @@ void loop() {
 	OTA::otaUpdate();
 	otaBM.after();
 
+	networkManager.comms().beginComms();
+
 	networkManagerBM.before();
 	networkManager.update();
 	networkManagerBM.after();
@@ -195,6 +195,8 @@ void loop() {
 	batteryBM.before();
 	battery.Loop();
 	batteryBM.after();
+
+	networkManager.comms().endComms();
 
 	ledManagerBM.before();
 	ledManager.update();
