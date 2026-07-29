@@ -20,10 +20,14 @@ namespace I2CSCAN {
     	uint8_t currentSCL = 0;
 		uint8_t currentSDAPortIndex = 0;
 		uint8_t currentSCLPortIndex = 0;
+		uint8_t startSDAPortIndex = 255;
+		uint8_t startSCLPortIndex = 255;
     	uint8_t currentAddress = 1;
     	bool found = false;
 		uint8_t txFails = 0;
     	std::vector<uint8_t> validPortsIndex;
+		static uint8_t defaultSDAPin =  static_cast<uint8_t>(PIN_IMU_SDA);
+		static uint8_t defaultSCLPin =  static_cast<uint8_t>(PIN_IMU_SCL);
 
 #ifdef ESP8266
 		std::array<uint8_t, 7> portArray = {16, 5, 4, 2, 14, 12, 13};
@@ -43,44 +47,53 @@ namespace I2CSCAN {
 		std::array<uint8_t, 1> portExclude = {LED_PIN};
 #endif
 
-		bool selectNextPort() {
-			currentSCLPortIndex++;
+		void switchPort(uint8_t sdaPortIndex, uint8_t sclPortIndex) {
+#ifdef ESP32
+			Wire.end();
+#endif
+			Wire.begin((int)portArray[sdaPortIndex], (int)portArray[sclPortIndex]);
+//			Serial.printf_P(PSTR("[INFO ] [I2CSCAN] Change I2C to SDA: %d, SCL: %d\r\n"), (int)portArray[sdaPortIndex], (int)portArray[sclPortIndex]);
+		}
 
-			// we just need to compare the Indexes to be sure we are not on the same port
-			if(currentSCLPortIndex == currentSDAPortIndex) currentSCLPortIndex++;
+		void incvalidPortsIndex(uint8_t &index) {
+			index = (index+1) % validPortsIndex.size();
+		}
 
-			if (currentSCLPortIndex < validPortsIndex.size()) {
-				// SCL changed and in index
-				currentSCL = validPortsIndex[currentSCLPortIndex];
-	#ifdef ESP32
-				Wire.end();
-	#endif
-				Wire.begin((int)portArray[currentSDA], (int)portArray[currentSCL]); //NOLINT
-//				Serial.printf_P(PSTR("[INFO ] [I2CSCAN] Change I2C to SDA: %d, SCL: %d\r\n"), (int)portArray[currentSDA], (int)portArray[currentSCL]);
-				return true;
-			}
-
-			currentSCLPortIndex = 0;
-			currentSCL = validPortsIndex[currentSCLPortIndex];
-
-			currentSDAPortIndex++;
-
-			if (currentSDAPortIndex >= validPortsIndex.size()) {
+		bool incSDA(){
+			incvalidPortsIndex(currentSDAPortIndex);
+			if (currentSDAPortIndex == startSDAPortIndex) {
+				// scan finished
+				switchPort(startSDAPortIndex, startSCLPortIndex);
 				if (!found) {
 					Serial.println(F("[ERROR] [I2CSCAN] I2C: No I2C devices found")); //NOLINT
 				}
-	#ifdef ESP32
-				Wire.end();
-	#endif
-				Wire.begin(static_cast<int>(PIN_IMU_SDA), static_cast<int>(PIN_IMU_SCL));
 				scanState = ScanState::DONE;
 				return false;
 			}
-
-			currentSDA = validPortsIndex[currentSDAPortIndex];
-			Wire.begin((int)portArray[currentSDA], (int)portArray[currentSCL]);
 			return true;
 		}
+
+		bool selectNextPort(){
+			while (1) {
+				incvalidPortsIndex(currentSCLPortIndex);
+				if (currentSCLPortIndex == startSCLPortIndex) {
+					// Point to increase SDA reached
+					if (!incSDA()) {
+						return false;
+					}
+				}
+				if (currentSCLPortIndex != currentSDAPortIndex) {
+					currentSCL = validPortsIndex[currentSCLPortIndex];
+					currentSDA = validPortsIndex[currentSDAPortIndex];
+// Debug
+//					Serial.printf("CCCC currentSDAPortIndex: %d currentSCLPortIndex: %d validPortsIndex.size: %d\r\n",
+//						currentSDAPortIndex, currentSCLPortIndex, validPortsIndex.size());
+					switchPort(currentSDA, currentSCL);
+					return true;
+				}
+			}
+		}
+
 		template <uint8_t size1, uint8_t size2>
 		uint8_t countCommonElements(
 			const std::array<uint8_t, size1>& array1,
@@ -113,21 +126,50 @@ namespace I2CSCAN {
 		uint8_t excludes = countCommonElements<portArray.size(), portExclude.size()>(portArray, portExclude);
 		validPortsIndex.reserve(portArray.size() - excludes); // Reserve space to avoid reallocations
 
-		for (uint8_t i; i < portArray.size(); i++) {
-			if (std::find(portExclude.begin(), portExclude.end(), i) == portExclude.end()) {
+		for (uint8_t i=0; i < portArray.size(); i++) {
+			if (std::find(portExclude.begin(), portExclude.end(), portArray[i]) == portExclude.end()) {
 				validPortsIndex.push_back(i); // Port is valid, add it to the list
 			}
 		}
 
+		// Lets find out the configured Index for the Pins
+		for (uint8_t i=0; i < validPortsIndex.size(); i++) {
+			if (portArray[validPortsIndex[i]] == defaultSDAPin) {
+				startSDAPortIndex = i;
+			}
+			if (portArray[validPortsIndex[i]] == defaultSCLPin) {
+				startSCLPortIndex = i;
+			}
+		}
+
+//		Serial.printf_P(PSTR("[ERROR] [I2CSCAN] Default I2C Ports SDA: %d SCL: %d\r\n"), defaultSDAPin, defaultSCLPin);
+		if (startSDAPortIndex == 255 || startSCLPortIndex == 255) {
+			Serial.printf_P(PSTR("[ERROR] [I2CSCAN] I2C Ports SDA: %d SCL: %d not found in Array. Abort the I2C Scan\r\n"), defaultSDAPin, defaultSCLPin);
+			// What todo when the PIN is not in the Index? Abort the scan?
+			// The current behavior will then just set index 0 and 1 as default.
+			// This will lead to problematic behavior if the Arrays are not correctly defined.
+			// As it will not able to reset back to the previous configured pins
+			return;
+		}
+
+// Debug
+//		for (const auto& portsIndex : validPortsIndex) {
+//			Serial.printf("Pin Index: %2d PinNum: %2d PinName: %s\r\n", portsIndex, portArray[portsIndex], portMap[portsIndex].c_str());
+//		}
+//		Serial.printf("startSDAPortIndex: %2d startSCLPortIndex: %2d\r\n", startSDAPortIndex, startSCLPortIndex);
+
 		// Reset scan variables and start scanning
         found = false;
-		currentSDAPortIndex = 0;
-		currentSCLPortIndex = 1;
+		currentSDAPortIndex = startSDAPortIndex;
+		currentSCLPortIndex = startSCLPortIndex;
 		currentSDA = validPortsIndex[currentSDAPortIndex];
 		currentSCL = validPortsIndex[currentSCLPortIndex];
         currentAddress = 1;
 		txFails = 0;
         scanState = ScanState::SCANNING;
+// Debug
+//		Serial.printf("AAAA currentSDAPortIndex: %d currentSCLPortIndex: %d validPortsIndex.size: %d\r\n",
+//			currentSDAPortIndex, currentSCLPortIndex, validPortsIndex.size());
 	}
 
     void update() {
