@@ -60,6 +60,11 @@
 						"sda": "4"
 					}
 				],
+				"SPI": {
+					"sck": "14",
+					"miso": "12",
+					"mosi": "13"
+				},
 				"BATTERY": {
 					"type": "BAT_EXTERNAL",
 					"r1": 10,
