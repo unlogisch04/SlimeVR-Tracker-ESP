@@ -199,11 +199,11 @@ namespace I2CSCAN {
         const uint8_t error = Wire.endTransmission();
 
         if (error == 0) {
-            Serial.printf_P(PSTR("[INFO ] [I2CSCAN] I2C (@ %s(%d) : %s(%d)): I2C device found at address 0x%02x!\n"),
+            Serial.printf_P(PSTR("[INFO ] [I2CSCAN] I2C (SDA: %s(%d) SCL: %s(%d)): I2C device found at address 0x%02x!\n"),
                             portMap[currentSDA].c_str(), portArray[currentSDA], portMap[currentSCL].c_str(), portArray[currentSCL], currentAddress);
             found = true;
         } else if (error == 4) { // Unable to start transaction, log and warn
-            Serial.printf_P(PSTR("[WARN ] [I2CSCAN] I2C (@ %s(%d) : %s(%d)): Unable to start transaction at address 0x%02x!\n"),
+            Serial.printf_P(PSTR("[WARN ] [I2CSCAN] I2C (SDA: %s(%d) SCL: %s(%d)): Unable to start transaction at address 0x%02x!\n"),
                             portMap[currentSDA].c_str(), portArray[currentSDA], portMap[currentSCL].c_str(), portArray[currentSCL], currentAddress);
             txFails++;
         }
