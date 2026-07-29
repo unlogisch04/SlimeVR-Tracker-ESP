@@ -4,6 +4,10 @@
 #include <cstdint>
 #include <string>
 
+#ifdef ESP32
+#include "driver/i2c.h"
+#endif
+
 #include "../../src/globals.h"
 #include "../../src/consts.h"
 
@@ -15,6 +19,10 @@ namespace I2CSCAN {
     };
 
 	namespace {
+		static uint8_t defaultSDAPin =  static_cast<uint8_t>(PIN_IMU_SDA);
+		static uint8_t defaultSCLPin =  static_cast<uint8_t>(PIN_IMU_SCL);
+		uint8_t activeSDAPin = defaultSDAPin;
+		uint8_t activeSCLPin = defaultSCLPin;
 		ScanState scanState = ScanState::IDLE;
     	uint8_t currentSDA = 0;
     	uint8_t currentSCL = 0;
@@ -26,8 +34,7 @@ namespace I2CSCAN {
     	bool found = false;
 		uint8_t txFails = 0;
     	std::vector<uint8_t> validPortsIndex;
-		static uint8_t defaultSDAPin =  static_cast<uint8_t>(PIN_IMU_SDA);
-		static uint8_t defaultSCLPin =  static_cast<uint8_t>(PIN_IMU_SCL);
+
 
 #ifdef ESP8266
 		std::array<uint8_t, 7> portArray = {16, 5, 4, 2, 14, 12, 13};
@@ -49,9 +56,18 @@ namespace I2CSCAN {
 
 		void switchPort(uint8_t sdaPortIndex, uint8_t sclPortIndex) {
 #ifdef ESP32
+			// code from I2CWireSensorInterface.cpp
 			Wire.end();
+			// Reset the Pins to not map
+			gpio_set_direction((gpio_num_t)activeSCLPin, GPIO_MODE_INPUT);
+			gpio_set_direction((gpio_num_t)activeSDAPin, GPIO_MODE_INPUT);
+			// this line seems not to be needed
+			//i2c_set_pin(I2C_NUM_0, (int)portArray[sdaPortIndex], (int)portArray[sclPortIndex], false, false, I2C_MODE_MASTER);
 #endif
 			Wire.begin((int)portArray[sdaPortIndex], (int)portArray[sclPortIndex]);
+
+			activeSDAPin = portArray[sdaPortIndex];
+			activeSCLPin = portArray[sclPortIndex];
 //			Serial.printf_P(PSTR("[INFO ] [I2CSCAN] Change I2C to SDA: %d, SCL: %d\r\n"), (int)portArray[sdaPortIndex], (int)portArray[sclPortIndex]);
 		}
 
@@ -164,6 +180,8 @@ namespace I2CSCAN {
 		currentSCLPortIndex = startSCLPortIndex;
 		currentSDA = validPortsIndex[currentSDAPortIndex];
 		currentSCL = validPortsIndex[currentSCLPortIndex];
+		activeSDAPin = portArray[currentSDA];
+		activeSCLPin = portArray[currentSCL];
         currentAddress = 1;
 		txFails = 0;
         scanState = ScanState::SCANNING;
