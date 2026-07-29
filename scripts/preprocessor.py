@@ -101,10 +101,20 @@ def _build_board_flags(defaults: dict, board_name: str) -> List[str]:
     sensors = values.get('SENSORS')
     if sensors:
         sensor_list = []
-
         add('PIN_IMU_SDA', 255, 'pin') # FIXME fix the I2C Scanner so it use the sensor list and not be called when no I2C sensor
         add('PIN_IMU_SCL', 255, 'pin')
         add('PIN_IMU_INT_2', 255, 'pin') # FIXME: fix the CONFIG serial command so it use the sensor list
+
+        # Use 255 as "not configured" so DirectSPIInterface falls back to default SPI pins.
+        add('PIN_IMU_SCK', 255, 'pin')
+        add('PIN_IMU_MISO', 255, 'pin')
+        add('PIN_IMU_MOSI', 255, 'pin')
+
+        spi_bus = values.get('SPI')
+        if spi_bus:
+            add('PIN_IMU_SCK', spi_bus.get('sck'), 'pin')
+            add('PIN_IMU_MISO', spi_bus.get('miso'), 'pin')
+            add('PIN_IMU_MOSI', spi_bus.get('mosi'), 'pin')
 
         for index, sensor in enumerate(sensors):
             if sensor.get('protocol') == 'I2C':
@@ -126,7 +136,7 @@ def _build_board_flags(defaults: dict, board_name: str) -> List[str]:
                     format_value(sensor.get('imu'), 'raw'),
                     f"DIRECT_PIN({format_value(sensor.get('cs'), 'pin')})",
                     format_value(sensor.get('rotation'), 'raw'),
-                    "DIRECT_SPI(24'000'000, MSBFIRST, SPI_MODE3)",
+                    "DIRECT_SPI(24'000'000, MSBFIRST, SPI_MODE3, PIN_IMU_SCK, PIN_IMU_MISO, PIN_IMU_MOSI)",
                     'false' if index == 0 else 'true',
                     f"DIRECT_PIN({format_value(sensor.get('int', 255), 'pin')})",
                     '0'

@@ -28,25 +28,46 @@
 
 namespace SlimeVR {
 
-DirectSPIInterface::DirectSPIInterface(SPIClass& spiClass, SPISettings spiSettings)
+DirectSPIInterface::DirectSPIInterface(
+	SPIClass* spiClass,
+	SPISettings spiSettings,
+	uint8_t sck,
+	uint8_t miso,
+	uint8_t mosi
+)
 	: m_spiClass{spiClass}
-	, m_spiSettings{spiSettings} {}
+	, m_spiSettings{spiSettings}
+	, m_sck{sck}
+	, m_miso{miso}
+	, m_mosi{mosi} {}
 
 bool DirectSPIInterface::init() {
-	m_spiClass.begin();
+	// To make sure SCK, MISO, MOSI pins have already defined
+	if (m_sck != 255 && m_miso != 255 && m_mosi != 255) {
+		// SPIClass::begin() requires int8_t
+		// for kepping uint_8 style, doing transform here
+		m_spiClass->begin(
+			(int8_t)m_sck,
+			(int8_t)m_miso,
+			(int8_t)m_mosi
+		);
+	} else {
+		// or use the default pin defines
+		m_spiClass->begin();
+	}
 	return true;
 }
 
 void DirectSPIInterface::swapIn() {}
 
 void DirectSPIInterface::beginTransaction(PinInterface* csPin) {
-	m_spiClass.beginTransaction(m_spiSettings);
+	m_spiClass->beginTransaction(m_spiSettings);
 	csPin->digitalWrite(LOW);
 }
 
 void DirectSPIInterface::endTransaction(PinInterface* csPin) {
 	csPin->digitalWrite(HIGH);
-	m_spiClass.endTransaction();
+	m_spiClass->endTransaction();
 }
 
 const SPISettings& DirectSPIInterface::getSpiSettings() { return m_spiSettings; }

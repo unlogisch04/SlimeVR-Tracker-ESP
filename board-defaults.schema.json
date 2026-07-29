@@ -88,6 +88,17 @@
 			"required": ["protocol", "imu", "cs"]
 		},
 
+		"SPI_BUS": {
+			"type": "object",
+			"description": "Shared SPI bus pin settings",
+			"properties": {
+				"sck": { "$ref": "#/$defs/pin", "description": "SCK Pin" },
+				"miso": { "$ref": "#/$defs/pin", "description": "MISO Pin" },
+				"mosi": { "$ref": "#/$defs/pin", "description": "MOSI Pin" }
+			},
+			"required": ["sck", "miso", "mosi"]
+		},
+
 		"IMU": {
 			"type": "object",
 			"discriminator": {
@@ -192,6 +203,7 @@
 					},
 					"required": ["LED_PIN", "LED_INVERTED"]
 				},
+				"SPI": { "$ref": "#/$defs/SPI_BUS" },
 				"BATTERY": { "$ref": "#/$defs/BATTERY" }
 			},
 			"required": ["SENSORS", "LED", "BATTERY"]
