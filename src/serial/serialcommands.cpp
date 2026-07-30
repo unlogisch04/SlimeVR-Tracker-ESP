@@ -31,8 +31,8 @@
 #include "logging/Logger.h"
 #include "utils.h"
 
-#ifdef ESP32
-#include "nvs_flash.h"
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
+#include "soc/rtc_cntl_reg.h"
 #endif
 
 #ifdef EXT_SERIAL_COMMANDS
@@ -58,6 +58,14 @@ constexpr const char* FULL_VENDOR_STR
 #else
 constexpr const char* FULL_VENDOR_STR = "Vendor: Unknown, product: Unknown";
 #endif
+
+static const char sCMDFlashmdoe[] PROGMEM
+	= "Entering flashing mode.\r\n"
+	  "You can now close the serial monitor\r\n"
+	  "and go to the firmware flasher to flash\r\n"
+	  "your tracker over USB.\r\n"
+	  "If you entered the flashing mode by accident,\r\n"
+	  "turn your tracker off and on.";
 
 namespace SerialCommands {
 SlimeVR::Logging::Logger logger("SerialCommands");
@@ -158,6 +166,20 @@ void cmdSet(CmdParser* parser) {
 				wifiNetwork.setWiFiCredentials(ssid, ppass);
 				logger.info("CMD SET BWIFI OK: New wifi credentials set, reconnecting");
 			}
+		} else if (parser->equalCmdParam(1, "FLASHMODE")) {
+#if ESP8266
+			logger.info(sCMDFlashmdoe);
+			delay(1000);
+			ESP.rebootIntoUartDownloadMode();
+#elif defined(CONFIG_IDF_TARGET_ESP32C3)
+			logger.info(sCMDFlashmdoe);
+			delay(1000);
+			// from https://esp32.com/viewtopic.php?t=33180
+			REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
+			esp_restart();
+#else
+			logger.error(PSTR("Flashmode is not supported on this device"));
+#endif
 #if EXT_SERIAL_COMMANDS
 		} else if (parser->equalCmdParam(1, "CRASH")) {
 			// well target of this function is to crash the tracker
