@@ -158,6 +158,15 @@ void cmdSet(CmdParser* parser) {
 				wifiNetwork.setWiFiCredentials(ssid, ppass);
 				logger.info("CMD SET BWIFI OK: New wifi credentials set, reconnecting");
 			}
+#if EXT_SERIAL_COMMANDS
+		} else if (parser->equalCmdParam(1, "CRASH")) {
+			// well target of this function is to crash the tracker
+			// used for debuging/testing
+			while (true) {
+				int* ptr = NULL;
+				*ptr = 0;
+			}
+#endif
 		} else {
 			logger.error("CMD SET ERROR: Unrecognized variable to set");
 		}
