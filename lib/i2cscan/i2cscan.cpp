@@ -71,12 +71,12 @@ namespace I2CSCAN {
 //			Serial.printf_P(PSTR("[INFO ] [I2CSCAN] Change I2C to SDA: %d, SCL: %d\r\n"), (int)portArray[sdaPortIndex], (int)portArray[sclPortIndex]);
 		}
 
-		void incvalidPortsIndex(uint8_t &index) {
+		void incrementvalidPortsIndex(uint8_t &index) {
 			index = (index+1) % validPortsIndex.size();
 		}
 
 		bool incSDA(){
-			incvalidPortsIndex(currentSDAPortIndex);
+			incrementvalidPortsIndex(currentSDAPortIndex);
 			if (currentSDAPortIndex == startSDAPortIndex) {
 				// scan finished
 				switchPort(startSDAPortIndex, startSCLPortIndex);
@@ -91,7 +91,7 @@ namespace I2CSCAN {
 
 		bool selectNextPort(){
 			while (1) {
-				incvalidPortsIndex(currentSCLPortIndex);
+				incrementvalidPortsIndex(currentSCLPortIndex);
 				if (currentSCLPortIndex == startSCLPortIndex) {
 					// Point to increase SDA reached
 					if (!incSDA()) {
