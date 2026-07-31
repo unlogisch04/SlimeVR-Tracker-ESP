@@ -22,6 +22,11 @@
 						"sda": "14"
 					}
 				],
+				"SPI": {
+					"sck": "255",
+					"miso": "255",
+					"mosi": "255"
+				},
 				"BATTERY": {
 					"type": "BAT_EXTERNAL",
 					"r1": 10,
@@ -143,6 +148,11 @@
 						"sda": "D2"
 					}
 				],
+				"SPI": {
+					"sck": "255",
+					"miso": "255",
+					"mosi": "255"
+				},
 				"BATTERY": {
 					"type": "BAT_EXTERNAL",
 					"r1": 100,
@@ -182,6 +192,11 @@
 						"sda": "D2"
 					}
 				],
+				"SPI": {
+					"sck": "255",
+					"miso": "255",
+					"mosi": "255"
+				},
 				"BATTERY": {
 					"type": "BAT_EXTERNAL",
 					"r1": 100,
@@ -221,6 +236,11 @@
 						"sda": "2"
 					}
 				],
+				"SPI": {
+					"sck": "255",
+					"miso": "255",
+					"mosi": "255"
+				},
 				"BATTERY": {
 					"type": "BAT_INTERNAL",
 					"r1": 100,
@@ -260,6 +280,11 @@
 						"sda": "5"
 					}
 				],
+				"SPI": {
+					"sck": "255",
+					"miso": "255",
+					"mosi": "255"
+				},
 				"BATTERY": {
 					"type": "BAT_EXTERNAL",
 					"r1": 100,
@@ -299,6 +324,11 @@
 						"sda": "21"
 					}
 				],
+				"SPI": {
+					"sck": "255",
+					"miso": "255",
+					"mosi": "255"
+				},
 				"BATTERY": {
 					"type": "BAT_EXTERNAL",
 					"r1": 100,
@@ -338,6 +368,11 @@
 						"sda": "5"
 					}
 				],
+				"SPI": {
+					"sck": "255",
+					"miso": "255",
+					"mosi": "255"
+				},
 				"BATTERY": {
 					"type": "BAT_EXTERNAL",
 					"r1": 100,
@@ -377,6 +412,11 @@
 						"sda": "8"
 					}
 				],
+				"SPI": {
+					"sck": "255",
+					"miso": "255",
+					"mosi": "255"
+				},
 				"BATTERY": {
 					"type": "BAT_EXTERNAL",
 					"r1": 100,
@@ -416,6 +456,11 @@
 						"sda": "5"
 					}
 				],
+				"SPI": {
+					"sck": "255",
+					"miso": "255",
+					"mosi": "255"
+				},
 				"BATTERY": {
 					"type": "BAT_EXTERNAL",
 					"r1": 100,
@@ -455,6 +500,11 @@
 						"sda": "5"
 					}
 				],
+				"SPI": {
+					"sck": "255",
+					"miso": "255",
+					"mosi": "255"
+				},
 				"BATTERY": {
 					"type": "BAT_EXTERNAL",
 					"r1": 100,
@@ -494,6 +544,11 @@
 						"sda": "2"
 					}
 				],
+				"SPI": {
+					"sck": "255",
+					"miso": "255",
+					"mosi": "255"
+				},
 				"BATTERY": {
 					"type": "BAT_EXTERNAL",
 					"r1": 100,
@@ -533,6 +588,11 @@
 						"sda": "6"
 					}
 				],
+				"SPI": {
+					"sck": "255",
+					"miso": "255",
+					"mosi": "255"
+				},
 				"BATTERY": {
 					"type": "BAT_EXTERNAL",
 					"r1": 100,
@@ -572,6 +632,11 @@
 						"sda": "7"
 					}
 				],
+				"SPI": {
+					"sck": "255",
+					"miso": "255",
+					"mosi": "255"
+				},
 				"BATTERY": {
 					"type": "BAT_EXTERNAL",
 					"r1": 10,
