@@ -75,7 +75,7 @@ namespace I2CSCAN {
 			index = (index+1) % validPortsIndex.size();
 		}
 
-		bool incSDA(){
+		bool incrementSDA(){
 			incrementvalidPortsIndex(currentSDAPortIndex);
 			if (currentSDAPortIndex == startSDAPortIndex) {
 				// scan finished
@@ -94,7 +94,7 @@ namespace I2CSCAN {
 				incrementvalidPortsIndex(currentSCLPortIndex);
 				if (currentSCLPortIndex == startSCLPortIndex) {
 					// Point to increase SDA reached
-					if (!incSDA()) {
+					if (!incrementSDA()) {
 						return false;
 					}
 				}
