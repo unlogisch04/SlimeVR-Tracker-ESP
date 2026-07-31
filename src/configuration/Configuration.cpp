@@ -43,10 +43,25 @@
 #define DIR_TOGGLES_OLD "/toggles"
 #define DIR_TOGGLES "/sensortoggles"
 
+extern bool initFullreset;
+
 namespace SlimeVR::Configuration {
 void Configuration::setup() {
 	if (m_Loaded) {
 		return;
+	}
+
+	if (initFullreset) {
+		this->m_Logger.info(
+			PSTR("Request for Factory reset from Recovery Mode received.")
+		);
+		if (LittleFS.begin()) {
+			this->factoryReset();
+		} else {
+			this->m_Logger.error(PSTR("Could not mount LittleFS try to format it"));
+			LittleFS.format();
+			this->factoryReset();
+		}
 	}
 
 	bool status = LittleFS.begin();
