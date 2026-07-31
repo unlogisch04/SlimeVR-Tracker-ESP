@@ -51,14 +51,64 @@
 			"description": "Protocol"
 		},
 
+		"COM_PORT": {
+			"type": "object",
+			"description": "Communication Port",
+			"discriminator": {
+				"propertyName": "protocol"
+			},
+			"oneOf": [
+				{ "$ref": "#/$defs/I2C_PINS" },
+				{ "$ref": "#/$defs/SPI_PINS" }
+			],
+			"required": ["protocol"]
+		},
+
+		"I2C_PINS": {
+			"type": "object",
+			"description": "I2C bus pins",
+			"properties": {
+				"protocol": { "const": "I2C" },
+				"sda": { "$ref": "#/$defs/pin", "description": "SDA Pin" },
+				"scl": { "$ref": "#/$defs/pin", "description": "SCL Pin" },
+				"SENSORS": {
+					"type": "array",
+					"items": { "$ref": "#/$defs/IMU" },
+					"minItems": 1,
+					"maxItems": 2,
+					"description": "Sensors List"
+				}
+			},
+			"required": ["SENSORS","protocol", "sda", "scl"]
+		},
+
+		"SPI_PINS": {
+			"type": "object",
+			"description": "SPI bus pin",
+			"properties": {
+				"protocol": { "const": "SPI" },
+				"sck": { "$ref": "#/$defs/pin", "description": "SCK Pin" },
+				"miso": { "$ref": "#/$defs/pin", "description": "MISO Pin" },
+				"mosi": { "$ref": "#/$defs/pin", "description": "MOSI Pin" },
+				"SENSORS": {
+					"type": "array",
+					"items": { "$ref": "#/$defs/IMU" },
+					"minItems": 1,
+					"maxItems": 2,
+					"description": "Sensors List"
+				}
+			},
+			"required": ["protocol", "sck", "miso", "mosi"]
+		},
+
+
+
 		"I2C_IMU": {
 			"type": "object",
 			"description": "I2C Imu",
 			"properties": {
 				"protocol": { "const": "I2C" },
 				"imu": { "$ref": "#/$defs/IMU_TYPE" },
-				"sda": { "$ref": "#/$defs/pin", "description": "SDA Pin" },
-				"scl": { "$ref": "#/$defs/pin", "description": "SCL Pin" },
 				"int": { "$ref": "#/$defs/pin", "description": "INT Pin" },
 				"address": {
 					"type": "number",
@@ -69,7 +119,7 @@
 					"description": "IMU Rotation"
 				}
 			},
-			"required": ["protocol", "imu", "sda", "scl"]
+			"required": ["protocol", "imu"]
 		},
 
 		"SPI_IMU": {
@@ -86,17 +136,6 @@
 				"cs": { "$ref": "#/$defs/pin", "description": "CS Pin" }
 			},
 			"required": ["protocol", "imu", "cs"]
-		},
-
-		"SPI_BUS": {
-			"type": "object",
-			"description": "Shared SPI bus pin settings",
-			"properties": {
-				"sck": { "$ref": "#/$defs/pin", "description": "SCK Pin" },
-				"miso": { "$ref": "#/$defs/pin", "description": "MISO Pin" },
-				"mosi": { "$ref": "#/$defs/pin", "description": "MOSI Pin" }
-			},
-			"required": ["sck", "miso", "mosi"]
 		},
 
 		"IMU": {
@@ -181,12 +220,12 @@
 		"BASIC_IMU_BOARD_CONFIG": {
 			"type": "object",
 			"properties": {
-				"SENSORS": {
+				"COM_PORT" : {
 					"type": "array",
-					"items": { "$ref": "#/$defs/IMU" },
+					"items": { "$ref": "#/$defs/COM_PORT" },
 					"minItems": 1,
 					"maxItems": 2,
-					"description": "Sensors List"
+					"description": "Communication Port List"
 				},
 				"LED": {
 					"type": "object",
@@ -203,10 +242,9 @@
 					},
 					"required": ["LED_PIN", "LED_INVERTED"]
 				},
-				"SPI": { "$ref": "#/$defs/SPI_BUS" },
 				"BATTERY": { "$ref": "#/$defs/BATTERY" }
 			},
-			"required": ["SENSORS", "LED", "BATTERY"]
+			"required": ["LED", "BATTERY"]
 		},
 
 		"BoardConfig": {
