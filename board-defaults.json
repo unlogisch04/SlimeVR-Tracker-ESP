@@ -11,13 +11,11 @@
 						"sda": "D2",
 						"SENSORS": [
 							{
-								"protocol": "I2C",
 								"imu": "IMU_AUTO",
 								"int": "D5",
 								"rotation": "DEG_270"
 							},
 							{
-								"protocol": "I2C",
 								"imu": "IMU_AUTO",
 								"int": "D5",
 								"rotation": "DEG_270"

@@ -73,7 +73,7 @@
 				"scl": { "$ref": "#/$defs/pin", "description": "SCL Pin" },
 				"SENSORS": {
 					"type": "array",
-					"items": { "$ref": "#/$defs/IMU" },
+					"items": { "$ref": "#/$defs/I2C_IMU" },
 					"minItems": 1,
 					"maxItems": 2,
 					"description": "Sensors List"
@@ -92,7 +92,7 @@
 				"mosi": { "$ref": "#/$defs/pin", "description": "MOSI Pin" },
 				"SENSORS": {
 					"type": "array",
-					"items": { "$ref": "#/$defs/IMU" },
+					"items": { "$ref": "#/$defs/SPI_IMU" },
 					"minItems": 1,
 					"maxItems": 2,
 					"description": "Sensors List"
@@ -101,13 +101,10 @@
 			"required": ["protocol", "sck", "miso", "mosi"]
 		},
 
-
-
 		"I2C_IMU": {
 			"type": "object",
-			"description": "I2C Imu",
+			"description": "I2C IMU",
 			"properties": {
-				"protocol": { "const": "I2C" },
 				"imu": { "$ref": "#/$defs/IMU_TYPE" },
 				"int": { "$ref": "#/$defs/pin", "description": "INT Pin" },
 				"address": {
@@ -119,14 +116,13 @@
 					"description": "IMU Rotation"
 				}
 			},
-			"required": ["protocol", "imu"]
+			"required": ["imu"]
 		},
 
 		"SPI_IMU": {
 			"type": "object",
-			"description": "SPI Imu",
+			"description": "SPI IMU",
 			"properties": {
-				"protocol": { "const": "SPI" },
 				"imu": { "$ref": "#/$defs/IMU_TYPE" },
 				"int": { "$ref": "#/$defs/pin", "description": "INT Pin" },
 				"rotation": {
@@ -135,19 +131,7 @@
 				},
 				"cs": { "$ref": "#/$defs/pin", "description": "CS Pin" }
 			},
-			"required": ["protocol", "imu", "cs"]
-		},
-
-		"IMU": {
-			"type": "object",
-			"discriminator": {
-				"propertyName": "protocol"
-			},
-			"oneOf": [
-				{ "$ref": "#/$defs/I2C_IMU" },
-				{ "$ref": "#/$defs/SPI_IMU" }
-			],
-			"required": ["protocol"]
+			"required": ["imu", "cs"]
 		},
 
 		"BOARD_TYPES": {
