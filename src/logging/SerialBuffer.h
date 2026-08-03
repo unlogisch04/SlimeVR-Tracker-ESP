@@ -1,6 +1,6 @@
 /*
 	SlimeVR Code is placed under the MIT license
-	Copyright (c) 2026 Gorbit99, unlogisch04 & SlimeVR Contributors
+	Copyright (c) 2026 Gorbit99 & SlimeVR Contributors
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy
 	of this software and associated documentation files (the "Software"), to deal
@@ -26,47 +26,32 @@
 #include <Arduino.h>
 
 #include <cmath>
-#include <cstdint>
-#include <limits>
 #include <vector>
 
-#include "../logging/Logger.h"
+namespace SlimeVR::Logging {
 
-namespace SlimeVR::Debugging {
-
-class Benchmark {
+class SerialBuffer {
 public:
-	Benchmark(const char* name);
-	Benchmark(const Benchmark& other) = delete;
-	Benchmark(Benchmark&& other) = delete;
-	Benchmark& operator=(const Benchmark& other) = delete;
-	Benchmark& operator=(Benchmark&& other) = delete;
+	void printf(const char* fmt, ...) __attribute__((format(printf, 2, 3)));
+	void tick();
+	void enableImmediateMode(bool enable = true);
 
-	void before();
-	void after();
-	static void tick();
+	static SerialBuffer& getInstance();
 
 private:
-	static constexpr float ReportsIntervalSeconds = 10.0f;
+	SerialBuffer();
+	static constexpr size_t BufferSize = 8192;
+	static constexpr size_t PerTickWriteSize = 128;
+	std::vector<char> buffer;
+	char printfBuffer[512 + 1];
+	size_t head = 0;
+	size_t tail = 0;
+	size_t count = 0;
+	bool immediateMode = false;
 
-	void printReport() const;
-	void reset();
+	static SerialBuffer instance;
 
-	static uint32_t lastReportMillis;
-
-	uint64_t currentMeasurementStartMicros = 0;
-
-	uint64_t totalTimeTakenMicros = 0;
-	uint64_t minTimeTakenMicros = std::numeric_limits<uint64_t>::max();
-	uint64_t maxTimeTakenMicros = 0;
-	uint32_t measurementCount = 0;
-
-	const char* name;
-	bool registered = false;
-
-	static SlimeVR::Logging::Logger logger;
-	static std::vector<Benchmark*> benchmarkInstances;
-	static uint32_t totalLoops;
+	static_assert(sizeof(printfBuffer) < BufferSize);
 };
 
-}  // namespace SlimeVR::Debugging
+}  // namespace SlimeVR::Logging
