@@ -228,7 +228,7 @@ void MPU6050Sensor::startCalibration(int calibrationType) {
 	SlimeVR::Configuration::SensorConfig calibration;
 	calibration.type = SlimeVR::Configuration::SensorConfigType::MPU6050;
 	calibration.data.mpu6050 = m_Config;
-	// TODO: setCalibration does nolonger exist.
+	// TODO: setCalibration does no longer exist.
 	// that code branch is only enabled when trying to compile with
 	// IMU_MPU6050_RUNTIME_CALIBRATION
 	configuration.setCalibration(sensorId, calibration);

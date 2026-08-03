@@ -112,10 +112,10 @@ void Configuration::setup() {
 
 // Constant called function
 // Should do the following:
-//  - Check if a config is flaged to change (well or check the flag for that)
-//  - Updaten after processig the flag if it is no changes left to save
-//  - make a minimal delay in between saves of files to limit the impact of multi config
-//    file saves
+//  - Check if a config is flagged to be saved.
+//  - after processing that one flag, check if there is a other config to save.
+//  - make a minimal delay in between saves of files, to limit the impact of multi
+//    config file saves
 void Configuration::tick() {
 	if (saveNeeded && ((lastsave + delaysave) < millis())) {
 		bool saved = false;
@@ -236,11 +236,11 @@ void Configuration::reset() {
 	m_Config.version = CURRENT_CONFIGURATION_VERSION;
 	m_ConfigChanged = true;
 	// Todo:
-	// - we dont want to save the old tracker configuration. As it would defeat the
-	// purpus of the reset. Also not clear if we realy need to save the basic
-	// configuration, till a command it changed again. But this also means the the after
+	// - we don't want to save the old tracker configuration. As it would defeat the
+	// purpose of the reset. Also not clear if we really need to save the basic
+	// configuration, until a command changes it again. But this also means, after
 	// a reset we need to restart a tracker to activate the new configuration on the
-	// sensor. The sensorconfig is not cleared on the sensor
+	// sensor. The sensorconfig is not cleared in the running class.
 	saveNeeded = true;
 
 	m_Logger.debug("Reset configuration");
@@ -308,8 +308,8 @@ void Configuration::setSensorToggles(
 
 // eraseSensors()
 // Removes the Configuration:
-// m_Sensors from Configuration, but it leaves a active copy on
-// the Sensors itself. To make a change after eraseSensors the trackern
+// m_Sensors from Configuration, but it leaves an active copy on
+// the Sensors itself. To make a change after eraseSensors the tracker
 // needs to be rebooted. Only then the Sensors are reinitialized
 void Configuration::eraseSensors() {
 	m_Sensors.clear();

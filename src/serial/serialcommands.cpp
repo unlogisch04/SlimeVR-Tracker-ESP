@@ -481,8 +481,8 @@ void cmdScanI2C(CmdParser* parser) {
 #endif
 
 void cmdConfig(CmdParser* parser) {
-	// The current implementation of config alloes only to print its value
-	// For future i want it to implement:
+	// The current implementation of config allows only to print its value
+	// For the future, I want it to support:
 	// - IP Configuration / DHCP
 	// - LED Settings
 	// - Sensor Settings (changing sensor parameters)
