@@ -55,6 +55,7 @@ enum class SendPacketType : uint8_t {
 	AcknowledgeConfigChange = 24,
 	FlexData = 26,
 	// PositionData = 27,
+	ProductInfo = 99,
 	Bundle = 100,
 	Inspection = 105,
 };

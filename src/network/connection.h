@@ -98,6 +98,9 @@ public:
 	// PACKET_FLEX_DATA 26
 	void sendFlexData(uint8_t sensorId, float flexLevel);
 
+	//
+	void sendProductInfo();
+
 #if ENABLE_INSPECTION
 	void sendInspectionRawIMUData(
 		uint8_t sensorId,

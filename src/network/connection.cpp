@@ -392,15 +392,27 @@ void Connection::sendTrackerDiscovery() {
 			// Tracker type to hint the server if it's a glove or normal tracker or
 			// something else
 			MUST_TRANSFER_BOOL(sendByte(static_cast<uint8_t>(TRACKER_TYPE)));
-			static_assert(std::string_view{VENDOR_NAME}.size() <= 255);
+			return true;
+		},
+		0
+	));
+}
+
+// PACKET_PRODUCT_INFO 99
+void Connection::sendProductInfo() {
+	MUST(m_Connected);
+	MUST(sendPacketCallback(
+		SendPacketType::ProductInfo,
+		[&]() {
+			static_assert(std::string_view{VENDOR_NAME}.size() <= 255, "VENDOR_NAME can not be bigger than 255 Bytes");
 			MUST_TRANSFER_BOOL(sendShortString(VENDOR_NAME));
-			static_assert(std::string_view{VENDOR_URL}.size() <= 255);
+			static_assert(std::string_view{VENDOR_URL}.size() <= 255, "VENDOR_URL can not be bigger than 255 Bytes");
 			MUST_TRANSFER_BOOL(sendShortString(VENDOR_URL));
-			static_assert(std::string_view{PRODUCT_NAME}.size() <= 255);
+			static_assert(std::string_view{PRODUCT_NAME}.size() <= 255, "PRODUCT_NAME can not be bigger than 255 Bytes");
 			MUST_TRANSFER_BOOL(sendShortString(PRODUCT_NAME));
-			static_assert(std::string_view{UPDATE_ADDRESS}.size() <= 255);
+			static_assert(std::string_view{UPDATE_ADDRESS}.size() <= 255, "UPDATE_ADDRESS can not be bigger than 255 Bytes");
 			MUST_TRANSFER_BOOL(sendShortString(UPDATE_ADDRESS));
-			static_assert(std::string_view{UPDATE_NAME}.size() <= 255);
+			static_assert(std::string_view{UPDATE_NAME}.size() <= 255, "UPDATE_NAME can not be bigger than 255 Bytes");
 			MUST_TRANSFER_BOOL(sendShortString(UPDATE_NAME));
 			return true;
 		},
@@ -594,6 +606,8 @@ void Connection::searchForServer() {
 				m_UDP.remoteIP().toString().c_str(),
 				m_UDP.remotePort()
 			);
+
+			networkConnection.sendProductInfo();
 
 			break;
 		}
