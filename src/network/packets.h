@@ -157,6 +157,7 @@ struct RotationDataPacket {
 	BigEndian<float> z;
 	BigEndian<float> w;
 	uint8_t accuracyInfo{};
+	uint32_t timestamp;  // Timestamp sensortime in us
 };
 
 struct MagnetometerAccuracyPacket {

@@ -80,7 +80,8 @@ public:
 		uint8_t sensorId,
 		Quat* const quaternion,
 		uint8_t dataType,
-		uint8_t accuracyInfo
+		uint8_t accuracyInfo,
+		uint32_t timestamp
 	);
 
 	// PACKET_MAGNETOMETER_ACCURACY 18

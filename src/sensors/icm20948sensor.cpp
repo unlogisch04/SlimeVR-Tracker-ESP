@@ -128,7 +128,7 @@ void ICM20948Sensor::sendData() {
 #if (USE_6_AXIS)
 		{
 			networkConnection
-				.sendRotationData(sensorId, &fusedRotation, DATA_TYPE_NORMAL, 0);
+				.sendRotationData(sensorId, &fusedRotation, DATA_TYPE_NORMAL, 0, timestamp);
 		}
 #else
 		{
@@ -136,7 +136,8 @@ void ICM20948Sensor::sendData() {
 				sensorId,
 				&fusedRotation,
 				DATA_TYPE_NORMAL,
-				dmpData.Quat9.Data.Accuracy
+				dmpData.Quat9.Data.Accuracy,
+				timestamp
 			);
 		}
 #endif
@@ -366,6 +367,7 @@ void ICM20948Sensor::readRotation() {
 
 			setFusedRotation(nRotation);
 			lastData = millis();
+			timestamp = micros();
 		}
 	}
 #else
@@ -393,6 +395,7 @@ void ICM20948Sensor::readRotation() {
 
 			setFusedRotation(nRotation);
 			lastData = millis();
+			timestamp = micros();
 		}
 	}
 #endif

@@ -58,6 +58,8 @@ public:
 	void updateAcc(const sensor_real_t Axyz[3], sensor_real_t deltat = -1.0f);
 	void updateMag(const sensor_real_t Mxyz[3], sensor_real_t deltat = -1.0f);
 	void updateGyro(const sensor_real_t Gxyz[3], sensor_real_t deltat = -1.0f);
+	void updateSensorTimestamp(uint32_t timestamp);
+	uint32_t getSensorTimestamp();
 
 	bool isUpdated();
 	void clearUpdated();
@@ -83,6 +85,8 @@ protected:
 	sensor_real_t gyrTs;
 	sensor_real_t accTs;
 	sensor_real_t magTs;
+	// Sensor Time in us preferably from the Sensor with clock it needs to handle turnaround correctly
+	uint32_t sensorTimeUs;
 
 	VQFParams vqfParams;
 	VQF vqf;

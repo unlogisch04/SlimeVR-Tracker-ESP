@@ -75,6 +75,7 @@ public:
 				[](const RawSensorT xyz[3], const sensor_real_t timeDelta) {},
 				[](const RawSensorT xyz[3], const sensor_real_t timeDelta) {},
 				[](const int16_t xyz, const sensor_real_t timeDelta) {},
+				[](const uint32_t timestamp) {},
 			});
 		}
 	}
@@ -101,6 +102,7 @@ public:
 				[&](const int16_t rawTemp, const sensor_real_t timeDelta) {
 					temp = rawTemp;
 				},
+				[](const uint32_t timestamp) {},
 			});
 			yield();
 		}
@@ -298,6 +300,7 @@ private:
 					++sampleCount;
 				},
 				[](const int16_t rawTemp, const sensor_real_t timeDelta) {},
+				[](const uint32_t timestamp) {},
 			});
 		}
 
@@ -420,6 +423,7 @@ private:
 				},
 				[](const RawSensorT xyz[3], const sensor_real_t timeDelta) {},
 				[](const int16_t rawTemp, const sensor_real_t timeDelta) {},
+				[](const uint32_t timestamp) {},
 			});
 		}
 		ledManager.off();
@@ -474,6 +478,7 @@ private:
 				[&](const int16_t rawTemp, const sensor_real_t timeDelta) {
 					tempSamples++;
 				},
+				[](const uint32_t timestamp) {},
 			});
 			yield();
 		}

@@ -121,6 +121,26 @@ struct ICM45Base {
 		static constexpr uint8_t IRegAddr = 0x7c;
 		static constexpr uint8_t IRegData = 0x7e;
 
+		// Timestamp support
+		struct SMC_control_0 {
+			static constexpr Bank bank = Bank::IPregTop1;
+			static constexpr uint8_t reg = 0x58;
+			static constexpr uint8_t value = (0x60)  // reserved bits
+										   | (0b0 << 4)  // ACCEL_LP_CLK_SEL
+										   | (0b0 << 3)  // TEMP_DIS
+										   | (0b0 << 2)  // TMST_FORCE_AUX_FINE_EN
+										   | (0b0 << 1)  // TMST_FSYNC_EN
+										   | (0b1 << 0);  // TMST_EN
+		};
+
+		struct FifoConfig4 {
+			static constexpr uint8_t reg = 0x22;
+			static constexpr uint8_t value = (0b0 << 0)  // FIFO_ES0_6B_9B
+										   | (0b1 << 1)  // FIFO_TMST_FSYNC_EN
+										   | (0b0 << 2)  // FIFO_COMP_EN
+										   | (0b0 << 3);  // FIFO_COMP_NC_FLOW_CFG
+		};
+
 		// Mag Support
 
 		struct IOCPadScenarioAuxOvrd {
@@ -208,6 +228,9 @@ struct ICM45Base {
 			BaseRegs::AccelConfig::reg,
 			BaseRegs::AccelConfig::value
 		);
+
+		writeBankRegister<typename BaseRegs::SMC_control_0>(BaseRegs::SMC_control_0::value);
+
 		m_RegisterInterface.writeReg(
 			BaseRegs::FifoConfig0::reg,
 			BaseRegs::FifoConfig0::value
@@ -215,6 +238,10 @@ struct ICM45Base {
 		m_RegisterInterface.writeReg(
 			BaseRegs::FifoConfig3::reg,
 			BaseRegs::FifoConfig3::value
+		);
+		m_RegisterInterface.writeReg(
+			BaseRegs::FifoConfig4::reg,
+			BaseRegs::FifoConfig4::value
 		);
 		m_RegisterInterface.writeReg(
 			BaseRegs::PwrMgmt0::reg,
@@ -274,6 +301,7 @@ struct ICM45Base {
 			uint8_t header = read_buffer[i];
 			bool has_gyro = header & (1 << 5);
 			bool has_accel = header & (1 << 6);
+			bool has_time = header & (1 << 3);
 
 			FifoEntryAligned entry;
 			memcpy(
@@ -305,6 +333,12 @@ struct ICM45Base {
 
 			if (entry.temp != 0x8000) {
 				callbacks.processTempSample(static_cast<int16_t>(entry.temp), TempTs);
+			}
+
+			if (has_time) {
+//				Serial.printf("Time %d\r\n", (entry.timestamp));
+//				Serial.printf("Time %ld\r\n", micros());
+				callbacks.processTimestamp(static_cast<uint32_t>(entry.timestamp));
 			}
 		}
 

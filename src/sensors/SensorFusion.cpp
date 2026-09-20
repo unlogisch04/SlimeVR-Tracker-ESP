@@ -59,6 +59,11 @@ void SensorFusion::updateGyro(const sensor_real_t Gxyz[3], sensor_real_t deltat)
 	linaccelReady = false;
 }
 
+void SensorFusion::updateSensorTimestamp(uint32_t timestamp) {
+	sensorTimeUs = timestamp;
+}
+uint32_t SensorFusion::getSensorTimestamp() { return sensorTimeUs; }
+
 bool SensorFusion::isUpdated() { return updated; }
 
 void SensorFusion::clearUpdated() { updated = false; }

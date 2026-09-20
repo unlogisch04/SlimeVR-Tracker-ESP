@@ -289,7 +289,8 @@ void Connection::sendRotationData(
 	uint8_t sensorId,
 	Quat* const quaternion,
 	uint8_t dataType,
-	uint8_t accuracyInfo
+	uint8_t accuracyInfo,
+	uint32_t timestamp
 ) {
 	MUST(m_Connected);
 	MUST(sendPacket(
@@ -302,6 +303,7 @@ void Connection::sendRotationData(
 			.z = quaternion->z,
 			.w = quaternion->w,
 			.accuracyInfo = accuracyInfo,
+			.timestamp = timestamp,
 		}
 	));
 }

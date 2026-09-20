@@ -206,7 +206,7 @@ void BNO080Sensor::motionLoop() {
 					nRotation.w,
 					calibrationAccuracy
 				);
-
+				timestamp = micros();
 				setFusedRotation(nRotation);
 				continue;
 				// Leave new quaternion if context open, it's closed later
@@ -223,7 +223,7 @@ void BNO080Sensor::motionLoop() {
 					magneticAccuracyEstimate,
 					calibrationAccuracy
 				);
-
+				timestamp = micros();
 				setFusedRotation(nRotation);
 				continue;
 				// Leave new quaternion if context open, it's closed later
@@ -238,6 +238,7 @@ void BNO080Sensor::motionLoop() {
 			// only send Accel if we have new data
 			if (imu.getNewLinAccel(nAccel.x, nAccel.y, nAccel.z, acc)) {
 				setAcceleration(nAccel);
+				timestamp = micros();
 				continue;
 			}
 		}
@@ -344,7 +345,8 @@ void BNO080Sensor::sendData() {
 			sensorId,
 			&fusedRotation,
 			DATA_TYPE_NORMAL,
-			calibrationAccuracy
+			calibrationAccuracy,
+			timestamp
 		);
 
 #ifdef DEBUG_SENSOR

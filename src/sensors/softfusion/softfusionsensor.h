@@ -150,6 +150,10 @@ class SoftFusionSensor : public Sensor {
 		}
 	}
 
+	void processTimestamp(uint32_t timestamp) {
+		m_fusion.updateSensorTimestamp(timestamp);
+	}
+
 public:
 	static constexpr auto TypeID = SensorType::Type;
 	static constexpr uint8_t Address = SensorType::Address;
@@ -251,6 +255,9 @@ public:
 				[&](int16_t sample, float TempTs) {
 					processTempSample(sample, TempTs);
 				},
+				[&](uint32_t timestamp) {
+					processTimestamp(timestamp);
+				},
 			});
 			if (overwhelmed) {
 				calibrator.signalOverwhelmed();
@@ -267,6 +274,7 @@ public:
 
 			setFusedRotation(m_fusion.getQuaternionQuat());
 			setAcceleration(m_fusion.getLinearAccVec());
+			setTimestamp(m_fusion.getSensorTimestamp());
 			optimistic_yield(100);
 		}
 

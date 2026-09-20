@@ -51,6 +51,10 @@ void Sensor::setFusedRotation(Quat r) {
 	}
 }
 
+void Sensor::setTimestamp(uint32_t Timestamp) {
+	timestamp = Timestamp;
+}
+
 void Sensor::sendData() {
 	if (newFusedRotation) {
 		newFusedRotation = false;
@@ -58,8 +62,10 @@ void Sensor::sendData() {
 			sensorId,
 			&fusedRotation,
 			DATA_TYPE_NORMAL,
-			calibrationAccuracy
+			calibrationAccuracy,
+			timestamp
 		);
+//		m_Logger.debug("Ts: %lu", micros());
 
 #ifdef DEBUG_SENSOR
 		m_Logger.trace("Quaternion: %f, %f, %f, %f", UNPACK_QUATERNION(fusedRotation));
